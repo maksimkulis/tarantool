@@ -15,6 +15,7 @@ lua_source(lua_sources lua/serpent.lua)
 lua_source(lua_sources lua/xlog.lua)
 lua_source(lua_sources lua/key_def.lua)
 lua_source(lua_sources lua/merger.lua)
+lua_source(lua_sources lua/txn.lua)
 set(bin_sources)
 bin_source(bin_sources bootstrap.snap bootstrap.h)
 
@@ -143,6 +144,7 @@ add_library(box STATIC
     lua/info.c
     lua/stat.c
     lua/ctl.c
+    lua/txn.c
     lua/error.cc
     lua/session.c
     lua/net_box.c

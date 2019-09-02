@@ -53,6 +53,7 @@
 #include "box/lua/stat.h"
 #include "box/lua/info.h"
 #include "box/lua/ctl.h"
+#include "box/lua/txn.h"
 #include "box/lua/session.h"
 #include "box/lua/net_box.h"
 #include "box/lua/cfg.h"
@@ -67,6 +68,7 @@ extern char session_lua[],
 	tuple_lua[],
 	key_def_lua[],
 	schema_lua[],
+	txn_lua[],
 	load_cfg_lua[],
 	xlog_lua[],
 	feedback_daemon_lua[],
@@ -79,6 +81,7 @@ static const char *lua_sources[] = {
 	"box/session", session_lua,
 	"box/tuple", tuple_lua,
 	"box/schema", schema_lua,
+	"box/txn", txn_lua,
 	"box/feedback_daemon", feedback_daemon_lua,
 	"box/upgrade", upgrade_lua,
 	"box/net_box", net_box_lua,
@@ -312,6 +315,7 @@ box_lua_init(struct lua_State *L)
 	box_lua_info_init(L);
 	box_lua_stat_init(L);
 	box_lua_ctl_init(L);
+	box_lua_txn_init(L);
 	box_lua_session_init(L);
 	box_lua_xlog_init(L);
 	box_lua_execute_init(L);

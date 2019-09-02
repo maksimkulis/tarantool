@@ -33,6 +33,7 @@
 #include "tuple.h"
 #include "journal.h"
 #include <fiber.h>
+#include <lauxlib.h>
 #include "xrow.h"
 
 double too_long_threshold;
@@ -877,3 +878,4 @@ txn_on_yield(struct trigger *trigger, void *event)
 	txn_set_flag(txn, TXN_IS_ABORTED_BY_YIELD);
 	return 0;
 }
+

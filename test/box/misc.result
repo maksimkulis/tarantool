@@ -86,6 +86,7 @@ t
   - space
   - stat
   - tuple
+  - txn
 ...
 t = nil
 ---
