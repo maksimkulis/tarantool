@@ -231,7 +231,7 @@ check_collate_arg(struct Parse *parse, struct Expr *expr)
 		left = left->pLeft;
 	enum field_type type = sql_expr_type(left);
 	if (type != FIELD_TYPE_STRING && type != FIELD_TYPE_SCALAR) {
-		diag_set(ClientError, ER_SQL_PARSER_GENERIC,
+		diag_set(ClientError, ER_SQL_PARSER_GENERIC, "",
 			 "COLLATE clause can't be used with non-string "
 			 "arguments");
 		parse->is_aborted = true;
@@ -1246,8 +1246,8 @@ sqlExprAssignVarNumber(Parse * pParse, Expr * pExpr, u32 n)
 			testcase(i == SQL_BIND_PARAMETER_MAX - 1);
 			testcase(i == SQL_BIND_PARAMETER_MAX);
 			if (is_neg || i < 1) {
-				diag_set(ClientError, ER_SQL_PARSER_GENERIC,
-					 "Index of binding slots must start "\
+				diag_set(ClientError, ER_SQL_PARSER_GENERIC, "",
+					 "index of binding slots must start "\
 					 "from 1");
 				pParse->is_aborted = true;
 				return;
@@ -1836,7 +1836,7 @@ sqlExprListAppendVector(Parse * pParse,	/* Parsing context */
 	    && pColumns->nId != (n = sqlExprVectorSize(pExpr))) {
 		const char *err = tt_sprintf("%d columns assigned %d values",
 					     pColumns->nId, n);
-		diag_set(ClientError, ER_SQL_PARSER_GENERIC, err);
+		diag_set(ClientError, ER_SQL_PARSER_GENERIC, "", err);
 		pParse->is_aborted = true;
 		goto vector_append_error;
 	}
@@ -3963,7 +3963,7 @@ sqlExprCodeTarget(Parse * pParse, Expr * pExpr, int target)
 			if (pInfo == 0) {
 				assert(!ExprHasProperty(pExpr, EP_IntValue));
 				const char *err = "misuse of aggregate: %s()";
-				diag_set(ClientError, ER_SQL_PARSER_GENERIC,
+				diag_set(ClientError, ER_SQL_PARSER_GENERIC, "",
 					 tt_sprintf(err, pExpr->u.zToken));
 				pParse->is_aborted = true;
 			} else {
@@ -4184,7 +4184,7 @@ sqlExprCodeTarget(Parse * pParse, Expr * pExpr, int target)
 			    ) {
 				const char *err =
 					"%d columns assigned %d values";
-				diag_set(ClientError, ER_SQL_PARSER_GENERIC,
+				diag_set(ClientError, ER_SQL_PARSER_GENERIC, "",
 					 tt_sprintf(err, pExpr->iTable, n));
 				pParse->is_aborted = true;
 			}
@@ -4281,7 +4281,7 @@ sqlExprCodeTarget(Parse * pParse, Expr * pExpr, int target)
 		}
 
 	case TK_VECTOR:{
-			diag_set(ClientError, ER_SQL_PARSER_GENERIC,
+			diag_set(ClientError, ER_SQL_PARSER_GENERIC, "",
 				 "row value misused");
 			pParse->is_aborted = true;
 			break;
@@ -4383,8 +4383,9 @@ sqlExprCodeTarget(Parse * pParse, Expr * pExpr, int target)
 		}
 	case TK_RAISE:
 		if (pParse->triggered_space == NULL) {
-			diag_set(ClientError, ER_SQL_PARSER_GENERIC, "RAISE() "\
-				 "may only be used within a trigger-program");
+			diag_set(ClientError, ER_SQL_PARSER_GENERIC, "", "RAISE"
+				 "() may only be used within a "
+				 "trigger-program");
 			pParse->is_aborted = true;
 			return 0;
 		}

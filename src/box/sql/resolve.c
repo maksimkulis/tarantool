@@ -382,6 +382,7 @@ lookupName(Parse * pParse,	/* The parsing context */
 					    && ExprHasProperty(pOrig, EP_Agg)) {
 						diag_set(ClientError,
 							 ER_SQL_PARSER_GENERIC,
+							 "",
 							 tt_sprintf(err, zAs));
 						pParse->is_aborted = true;
 						return WRC_Abort;
@@ -389,6 +390,7 @@ lookupName(Parse * pParse,	/* The parsing context */
 					if (sqlExprVectorSize(pOrig) != 1) {
 						diag_set(ClientError,
 							 ER_SQL_PARSER_GENERIC,
+							 "",
 							 "row value misused");
 						pParse->is_aborted = true;
 						return WRC_Abort;
@@ -424,7 +426,7 @@ lookupName(Parse * pParse,	/* The parsing context */
 		} else {
 			err = tt_sprintf("ambiguous column name: %s", zCol);
 		}
-		diag_set(ClientError, ER_SQL_PARSER_GENERIC, err);
+		diag_set(ClientError, ER_SQL_PARSER_GENERIC, "", err);
 		pParse->is_aborted = true;
 		pTopNC->nErr++;
 	}
@@ -606,7 +608,7 @@ resolveExprStep(Walker * pWalker, Expr * pExpr)
 				return WRC_Abort;
 			}
 			if (!func->def->exports.sql) {
-				diag_set(ClientError, ER_SQL_PARSER_GENERIC,
+				diag_set(ClientError, ER_SQL_PARSER_GENERIC, "",
 					 tt_sprintf("function %.*s() is not "
 						    "available in SQL",
 						     nId, zId));
@@ -661,7 +663,8 @@ resolveExprStep(Walker * pWalker, Expr * pExpr)
 				const char *err =
 					tt_sprintf("misuse of aggregate "\
 						   "function %.*s()", nId, zId);
-				diag_set(ClientError, ER_SQL_PARSER_GENERIC, err);
+				diag_set(ClientError, ER_SQL_PARSER_GENERIC, "",
+					 err);
 				pParse->is_aborted = true;
 				pNC->nErr++;
 				is_agg = 0;
@@ -917,13 +920,14 @@ resolveCompoundOrderBy(Parse * pParse,	/* Parsing context.  Leave error messages
 			if (sqlExprIsInteger(pE, &iCol)) {
 				if (iCol <= 0 || iCol > pEList->nExpr) {
 					const char *err =
-						"Error at ORDER BY in place "\
+						"error at ORDER BY in place "\
 						"%d: term out of range - "\
 						"should be between 1 and %d";
 					err = tt_sprintf(err, i + 1,
 							 pEList->nExpr);
 					diag_set(ClientError,
-						 ER_SQL_PARSER_GENERIC, err);
+						 ER_SQL_PARSER_GENERIC, "",
+						 err);
 					pParse->is_aborted = true;
 					return 1;
 				}
@@ -973,10 +977,10 @@ resolveCompoundOrderBy(Parse * pParse,	/* Parsing context.  Leave error messages
 	}
 	for (i = 0; i < pOrderBy->nExpr; i++) {
 		if (pOrderBy->a[i].done == 0) {
-			const char *err = "Error at ORDER BY in place %d: "\
+			const char *err = "error at ORDER BY in place %d: "\
 					  "term does not match any column in "\
 					  "the result set";
-			diag_set(ClientError, ER_SQL_PARSER_GENERIC,
+			diag_set(ClientError, ER_SQL_PARSER_GENERIC, "",
 				 tt_sprintf(err, i + 1));
 			pParse->is_aborted = true;
 			return 1;
@@ -1023,12 +1027,12 @@ sqlResolveOrderGroupBy(Parse * pParse,	/* Parsing context.  Leave error messages
 	for (i = 0, pItem = pOrderBy->a; i < pOrderBy->nExpr; i++, pItem++) {
 		if (pItem->u.x.iOrderByCol) {
 			if (pItem->u.x.iOrderByCol > pEList->nExpr) {
-				const char *err = "Error at %s BY in place "\
+				const char *err = "error at %s BY in place "\
 						  "%d: term out of range - "\
 						  "should be between 1 and %d";
 				err = tt_sprintf(err, zType, i + 1,
 						 pEList->nExpr);
-				diag_set(ClientError, ER_SQL_PARSER_GENERIC,
+				diag_set(ClientError, ER_SQL_PARSER_GENERIC, "",
 					 err);
 				pParse->is_aborted = true;
 				return 1;
@@ -1094,11 +1098,11 @@ resolveOrderGroupBy(NameContext * pNC,	/* The name context of the SELECT stateme
 			 * order-by term to a copy of the result-set expression
 			 */
 			if (iCol < 1 || iCol > 0xffff) {
-				const char *err = "Error at %s BY in place "\
+				const char *err = "error at %s BY in place "\
 						  "%d: term out of range - "\
 						  "should be between 1 and %d";
 				err = tt_sprintf(err, zType, i + 1, nResult);
-				diag_set(ClientError, ER_SQL_PARSER_GENERIC,
+				diag_set(ClientError, ER_SQL_PARSER_GENERIC, "",
 					 err);
 				pParse->is_aborted = true;
 				return 1;
@@ -1387,7 +1391,7 @@ resolveSelectStep(Walker * pWalker, Select * p)
 			     i++, pItem++) {
 				if (ExprHasProperty(pItem->pExpr, EP_Agg)) {
 					diag_set(ClientError,
-						 ER_SQL_PARSER_GENERIC,
+						 ER_SQL_PARSER_GENERIC, "",
 						 err_msg);
 					pParse->is_aborted = true;
 					return WRC_Abort;
@@ -1400,7 +1404,7 @@ resolveSelectStep(Walker * pWalker, Select * p)
 		 */
 		if (p->pNext && p->pEList->nExpr != p->pNext->pEList->nExpr) {
 			if (p->pNext->selFlags & SF_Values) {
-				diag_set(ClientError, ER_SQL_PARSER_GENERIC,
+				diag_set(ClientError, ER_SQL_PARSER_GENERIC, "",
 					 "all VALUES must have the same "\
 					 "number of terms");
 			} else {
@@ -1410,7 +1414,7 @@ resolveSelectStep(Walker * pWalker, Select * p)
 					"result columns";
 				const char *op =
 					sql_select_op_name(p->pNext->op);
-				diag_set(ClientError, ER_SQL_PARSER_GENERIC,
+				diag_set(ClientError, ER_SQL_PARSER_GENERIC, "",
 					 tt_sprintf(err, op));
 			}
 			pParse->is_aborted = true;

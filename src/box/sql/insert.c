@@ -383,7 +383,7 @@ sqlInsert(Parse * pParse,	/* Parser context */
 			if (bit_test(used_columns, j)) {
 				const char *err = "table id list: duplicate "\
 						  "column name %s";
-				diag_set(ClientError, ER_SQL_PARSER_GENERIC,
+				diag_set(ClientError, ER_SQL_PARSER_GENERIC, "",
 					 tt_sprintf(err, pColumn->a[i].zName));
 				pParse->is_aborted = true;
 				goto insert_cleanup;
@@ -500,13 +500,13 @@ sqlInsert(Parse * pParse,	/* Parser context */
 			"table %s has %d columns but %d values were supplied";
 		err = tt_sprintf(err, pTabList->a[0].zName,
 				 space_def->field_count, nColumn);
-		diag_set(ClientError, ER_SQL_PARSER_GENERIC, err);
+		diag_set(ClientError, ER_SQL_PARSER_GENERIC, "", err);
 		pParse->is_aborted = true;
 		goto insert_cleanup;
 	}
 	if (pColumn != 0 && nColumn != pColumn->nId) {
 		const char *err = "%d values for %d columns";
-		diag_set(ClientError, ER_SQL_PARSER_GENERIC,
+		diag_set(ClientError, ER_SQL_PARSER_GENERIC, "",
 			 tt_sprintf(err, nColumn, pColumn->nId));
 		pParse->is_aborted = true;
 		goto insert_cleanup;

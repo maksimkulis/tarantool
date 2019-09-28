@@ -905,7 +905,7 @@ test:do_execsql_test(
         CREATE TABLE k(o  INT primary key);
     ]])
 
-err = { 1, "SELECTs to the left and right of UNION ALL do not have the same number of result columns" }
+err = { 1, "Syntax error: SELECTs to the left and right of UNION ALL do not have the same number of result columns" }
 test:do_execsql_test(
     10.2,
     [[

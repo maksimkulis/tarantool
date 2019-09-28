@@ -17,7 +17,7 @@ test:do_catchsql_test(
 		ANALYZE v0;
 	]], {
 		-- <sql-errors-1.1>
-		1,"Syntax error near 'ANALYZE'"
+		1,"Syntax error on line 1 at column 3 near 'ANALYZE'"
 		-- </sql-errors-1.1>
 	})
 
@@ -422,7 +422,7 @@ test:do_catchsql_test(
 		CREATE TRIGGER r0 AFTER INSERT ON t0 FOR EACH ROW BEGIN INSERT INTO t0.i VALUES (2); END;
 	]], {
 		-- <sql-errors-1.37>
-		1,"qualified table names are not allowed on INSERT, UPDATE, and DELETE statements within triggers"
+		1,"Syntax error on line 1 at column 76: qualified table names are not allowed on INSERT, UPDATE, and DELETE statements within triggers"
 		-- </sql-errors-1.37>
 	})
 
@@ -432,7 +432,7 @@ test:do_catchsql_test(
 		UPDATE t0 SET (i, a) = (100,1,1);
 	]], {
 		-- <sql-errors-1.38>
-		1,"2 columns assigned 3 values"
+		1,"Syntax error: 2 columns assigned 3 values"
 		-- </sql-errors-1.38>
 	})
 
@@ -442,7 +442,7 @@ test:do_catchsql_test(
 		SELECT * FROM t0();
 	]], {
 		-- <sql-errors-1.39>
-		1,"'T0' is not a function"
+		1,"Syntax error: 'T0' is not a function"
 		-- </sql-errors-1.39>
 	})
 
@@ -452,7 +452,7 @@ test:do_catchsql_test(
 		SELECT $0;
 	]], {
 		-- <sql-errors-1.40>
-		1,"Index of binding slots must start from 1"
+		1,"Syntax error: index of binding slots must start from 1"
 		-- </sql-errors-1.40>
 	})
 
@@ -472,7 +472,7 @@ test:do_catchsql_test(
 		SELECT (1, 2);
 	]], {
 		-- <sql-errors-1.42>
-		1,"row value misused"
+		1,"Syntax error: row value misused"
 		-- </sql-errors-1.42>
 	})
 
@@ -482,7 +482,7 @@ test:do_catchsql_test(
 		SELECT (i,a) AS m FROM t0 WHERE m < 1;
 	]], {
 		-- <sql-errors-1.43>
-		1,"row value misused"
+		1,"Syntax error: row value misused"
 		-- </sql-errors-1.43>
 	})
 
@@ -522,7 +522,7 @@ test:do_catchsql_test(
 		DROP TABLE IF EXISTS END;
 	]], {
 		-- <sql-errors-1.47>
-		1, "Keyword 'END' is reserved. Please use double quotes if 'END' is an identifier."
+		1, "Syntax error on line 1 at column 27: keyword 'END' is reserved. Please use double quotes if 'END' is an identifier."
 		-- </sql-errors-1.47>
 	})
 

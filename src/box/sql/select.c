@@ -451,7 +451,7 @@ sqlJoinType(Parse * pParse, Token * pA, Token * pB, Token * pC)
 					 "%.*s %.*s %.*s", pA->n, pA->z, pB->n,
 					 pB->z, pC->n, pC->z);
 		}
-		diag_set(ClientError, ER_SQL_PARSER_GENERIC, err);
+		diag_set(ClientError, ER_SQL_PARSER_GENERIC, "", err);
 		pParse->is_aborted = true;
 		jointype = JT_INNER;
 	} else if ((jointype & JT_OUTER) != 0
@@ -640,7 +640,7 @@ sqlProcessJoin(Parse * pParse, Select * p)
 		 */
 		if (pRight->fg.jointype & JT_NATURAL) {
 			if (pRight->pOn || pRight->pUsing) {
-				diag_set(ClientError, ER_SQL_PARSER_GENERIC,
+				diag_set(ClientError, ER_SQL_PARSER_GENERIC, "",
 					 "a NATURAL join may not have "
 					 "an ON or USING clause");
 				pParse->is_aborted = true;
@@ -664,7 +664,7 @@ sqlProcessJoin(Parse * pParse, Select * p)
 		/* Disallow both ON and USING clauses in the same join
 		 */
 		if (pRight->pOn && pRight->pUsing) {
-			diag_set(ClientError, ER_SQL_PARSER_GENERIC,
+			diag_set(ClientError, ER_SQL_PARSER_GENERIC, "",
 				 "cannot have both ON and USING clauses in "\
 				 "the same join");
 			pParse->is_aborted = true;
@@ -709,7 +709,7 @@ sqlProcessJoin(Parse * pParse, Select * p)
 				    ) {
 					err = tt_sprintf(err, zName);
 					diag_set(ClientError,
-						 ER_SQL_PARSER_GENERIC, err);
+						 ER_SQL_PARSER_GENERIC, "", err);
 					pParse->is_aborted = true;
 					return 1;
 				}
@@ -2115,7 +2115,7 @@ computeLimitRegisters(Parse * pParse, Select * p, int iBreak)
 		if((p->pLimit->flags & EP_Collate) != 0 ||
 		   (p->pOffset != NULL &&
 		   (p->pOffset->flags & EP_Collate) != 0)) {
-			diag_set(ClientError, ER_SQL_UNRECOGNIZED_SYNTAX,
+			diag_set(ClientError, ER_SQL_UNRECOGNIZED_SYNTAX, "",
 				 sizeof("COLLATE"), "COLLATE");
 			pParse->is_aborted = true;
 			return;
@@ -2618,7 +2618,7 @@ multiSelect(Parse * pParse,	/* Parsing context */
 		const char *err_msg =
 			tt_sprintf("ORDER BY clause should come after %s not "\
 				   "before", sql_select_op_name(p->op));
-		diag_set(ClientError, ER_SQL_PARSER_GENERIC, err_msg);
+		diag_set(ClientError, ER_SQL_PARSER_GENERIC, "", err_msg);
 		pParse->is_aborted = true;
 		rc = 1;
 		goto multi_select_end;
@@ -2627,7 +2627,7 @@ multiSelect(Parse * pParse,	/* Parsing context */
 		const char *err_msg =
 			tt_sprintf("LIMIT clause should come after %s not "\
 				   "before", sql_select_op_name(p->op));
-		diag_set(ClientError, ER_SQL_PARSER_GENERIC, err_msg);
+		diag_set(ClientError, ER_SQL_PARSER_GENERIC, "", err_msg);
 		pParse->is_aborted = true;
 		rc = 1;
 		goto multi_select_end;
@@ -4642,14 +4642,14 @@ withExpand(Walker * pWalker, struct SrcList_item *pFrom)
 		 * In this case, proceed.
 		 */
 		if (pCte->zCteErr) {
-			diag_set(ClientError, ER_SQL_PARSER_GENERIC,
+			diag_set(ClientError, ER_SQL_PARSER_GENERIC, "",
 				 tt_sprintf(pCte->zCteErr, pCte->zName));
 			pParse->is_aborted = true;
 			return -1;
 		}
 		if (pFrom->fg.isTabFunc) {
 			const char *err = "'%s' is not a function";
-			diag_set(ClientError, ER_SQL_PARSER_GENERIC,
+			diag_set(ClientError, ER_SQL_PARSER_GENERIC, "",
 				 tt_sprintf(err, pFrom->zName));
 			pParse->is_aborted = true;
 			return -1;
@@ -4688,7 +4688,8 @@ withExpand(Walker * pWalker, struct SrcList_item *pFrom)
 			const char *err_msg =
 				tt_sprintf("multiple references to recursive "\
 					   "table: %s", pCte->zName);
-			diag_set(ClientError, ER_SQL_PARSER_GENERIC, err_msg);
+			diag_set(ClientError, ER_SQL_PARSER_GENERIC, "",
+				 err_msg);
 			pParse->is_aborted = true;
 			return -1;
 		}
@@ -4710,7 +4711,8 @@ withExpand(Walker * pWalker, struct SrcList_item *pFrom)
 						   "for %d columns",
 						   pCte->zName, pEList->nExpr,
 						   pCte->pCols->nExpr);
-				diag_set(ClientError, ER_SQL_PARSER_GENERIC, err_msg);
+				diag_set(ClientError, ER_SQL_PARSER_GENERIC, "",
+					 err_msg);
 				pParse->is_aborted = true;
 				pParse->pWith = pSavedWith;
 				return -1;
@@ -4865,7 +4867,7 @@ selectExpander(Walker * pWalker, Select * p)
 				const char *err =
 					tt_sprintf("'%s' is not a function",
 						   pFrom->zName);
-				diag_set(ClientError, ER_SQL_PARSER_GENERIC,
+				diag_set(ClientError, ER_SQL_PARSER_GENERIC, "",
 					 err);
 				pParse->is_aborted = true;
 				return WRC_Abort;
@@ -5285,7 +5287,7 @@ resetAccumulator(Parse * pParse, AggInfo * pAggInfo)
 			Expr *pE = pFunc->pExpr;
 			assert(!ExprHasProperty(pE, EP_xIsSelect));
 			if (pE->x.pList == 0 || pE->x.pList->nExpr != 1) {
-				diag_set(ClientError, ER_SQL_PARSER_GENERIC,
+				diag_set(ClientError, ER_SQL_PARSER_GENERIC, "",
 					 "DISTINCT aggregates must have "\
 					 "exactly one argument");
 				pParse->is_aborted = true;

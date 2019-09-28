@@ -95,7 +95,7 @@ test:do_catchsql_test(
         SELECT count(*) FROM t1, t2 ON (t1.a=t2.a) USING (a)
     ]], {
         -- <e_select-0.1.4>
-        1, "cannot have both ON and USING clauses in the same join"
+        1, "Syntax error: cannot have both ON and USING clauses in the same join"
         -- </e_select-0.1.4>
     })
 
@@ -105,7 +105,7 @@ test:do_catchsql_test(
         SELECT count(*) FROM t1, t2 USING (a) ON (t1.a=t2.a)
     ]], {
         -- <e_select-0.1.5>
-        1, [[Keyword 'ON' is reserved. Please use double quotes if 'ON' is an identifier.]]
+        1, [[Syntax error on line 1 at column 47: keyword 'ON' is reserved. Please use double quotes if 'ON' is an identifier.]]
         -- </e_select-0.1.5>
     })
 
@@ -643,7 +643,7 @@ for tn, sql in ipairs(data) do
 string.format([[
             %s
         ]], sql), {
-            1, "a NATURAL join may not have an ON or USING clause"
+            1, "Syntax error: a NATURAL join may not have an ON or USING clause"
         })
 
 end
@@ -805,9 +805,9 @@ test:do_select_tests(
 -- FROM clause.
 --
 data = {
-    {"1.1", "SELECT a, b, c FROM z1 WHERE *",  "Syntax error near '*'"},
-    {"1.2", "SELECT a, b, c FROM z1 GROUP BY *", "Syntax error near '*'"},
-    {"1.3", "SELECT 1 + * FROM z1",  "Syntax error near '*'"},
+    {"1.1", "SELECT a, b, c FROM z1 WHERE *",  "Syntax error on line 1 at column 30 near '*'"},
+    {"1.2", "SELECT a, b, c FROM z1 GROUP BY *", "Syntax error on line 1 at column 33 near '*'"},
+    {"1.3", "SELECT 1 + * FROM z1",  "Syntax error on line 1 at column 12 near '*'"},
     {"1.4", "SELECT * + 1 FROM z1", "Failed to expand '*' in SELECT statement without FROM clause"},
     {"2.1", "SELECT *", "Failed to expand '*' in SELECT statement without FROM clause"},
     {"2.2", "SELECT * WHERE 1", "Failed to expand '*' in SELECT statement without FROM clause"},
@@ -1064,7 +1064,7 @@ data = {
 for _, val in ipairs(data) do
     local tn = val[1]
     local select = val[2]
-    local res = {1, "aggregate functions are not allowed in the GROUP BY clause"}
+    local res = {1, "Syntax error: aggregate functions are not allowed in the GROUP BY clause"}
     test:do_catchsql_test(
         "e_select-4."..tn,
         select, res)
@@ -1341,7 +1341,7 @@ for tn, val in ipairs(data) do
     local sql = val[1]
     local subst = val[2]
     local label = "e_select-7.1."..tn
-    local error = string.format("SELECTs to the left and right of %s do not have the same number of result columns", subst)
+    local error = string.format("Syntax error: SELECTs to the left and right of %s do not have the same number of result columns", subst)
     test:do_catchsql_test(
         label,
         sql,
@@ -1380,7 +1380,7 @@ for _, val in ipairs(data) do
     local op1 = val[3]
     local op2 = val[4]
     local label = "e_select-7.2."..tn
-    local error = string.format("%s clause should come after %s not before", op1, op2)
+    local error = string.format("Syntax error: %s clause should come after %s not before", op1, op2)
     test:do_catchsql_test(
         label,
         select,
@@ -1853,13 +1853,13 @@ test:do_catchsql_test(
     "e_select-8.7.1.1",
     "SELECT x FROM d1 UNION ALL SELECT a FROM d2 ORDER BY x*z",
     {
-        1, "Error at ORDER BY in place 1: term does not match any column in the result set"})
+        1, "Syntax error: error at ORDER BY in place 1: term does not match any column in the result set"})
 
 test:do_catchsql_test(
     "e_select-8.7.1.2",
     "SELECT x,z FROM d1 UNION ALL SELECT a,b FROM d2 ORDER BY x, x/z",
     {
-        1, "Error at ORDER BY in place 2: term does not match any column in the result set"})
+        1, "Syntax error: error at ORDER BY in place 2: term does not match any column in the result set"})
 
 test:do_select_tests(
     "e_select-8.7.2",
@@ -2088,7 +2088,7 @@ for _, val in ipairs({{1, "SELECT a FROM d5 UNION SELECT c FROM d6 ORDER BY a+1"
         "e_select-8.14."..tn,
         select,
         {
-            1, string.format("Error at ORDER BY in place %s: term does not match any column in the result set", err_param)})
+            1, string.format("Syntax error: error at ORDER BY in place %s: term does not match any column in the result set", err_param)})
 end
 -- EVIDENCE-OF: R-03407-11483 Each term of the ORDER BY clause is
 -- processed separately and may be matched against result columns from

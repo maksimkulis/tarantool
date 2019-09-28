@@ -278,7 +278,7 @@ test:do_catchsql_test(
         ) WHERE y=1
     ]], {
         -- <8.1>
-        1, "SELECTs to the left and right of UNION do not have the same number of result columns"
+        1, "Syntax error: SELECTs to the left and right of UNION do not have the same number of result columns"
         -- </8.1>
     })
 
@@ -289,7 +289,7 @@ test:do_catchsql_test(
         EXPLAIN QUERY PLAN SELECT * FROM v0 WHERE x='0' OR y;
     ]], {
         -- <8.2>
-        1, "SELECTs to the left and right of UNION do not have the same number of result columns"
+        1, "Syntax error: SELECTs to the left and right of UNION do not have the same number of result columns"
         -- </8.2>
     })
 

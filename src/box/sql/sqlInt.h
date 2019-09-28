@@ -2181,6 +2181,10 @@ struct Parse {
   ***********************************************************************/
 
 	Token sLastToken;	/* The last token parsed */
+	/** The line counter. */
+	uint32_t line_count;
+	/** The position in a line. */
+	uint32_t line_pos;
 	ynVar nVar;		/* Number of '?' variables seen in the SQL so far */
 	u8 explain;		/* True if the EXPLAIN flag is found on the query */
 	int nHeight;		/* Expression tree height of current sub-select */
@@ -4466,5 +4470,17 @@ sql_add_autoincrement(struct Parse *parse_context, uint32_t fieldno);
 int
 sql_fieldno_by_name(struct Parse *parse_context, struct Expr *field_name,
 		    uint32_t *fieldno);
+
+/**
+ * Call diag_set() with or without error line and offset.
+ *
+ * @param parser Parser.
+ * @param len    String length.
+ * @param str_1  Ptr to first string.
+ * @param str_2  Ptr to second string.
+ */
+void
+parser_diag_set(struct Parse *parser, uint32_t errcode, uint32_t len_1,
+		const char *str_1, uint32_t len_2, const char *str_2);
 
 #endif				/* sqlINT_H */

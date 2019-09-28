@@ -684,7 +684,7 @@ test:do_catchsql_test(
         SELECT * FROM t7 LIMIT 3
     ]], {
         -- <limit-9.5>
-        1, "LIMIT clause should come after UNION not before"
+        1, "Syntax error: LIMIT clause should come after UNION not before"
         -- </limit-9.5>
     })
 

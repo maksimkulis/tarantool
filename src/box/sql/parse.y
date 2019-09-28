@@ -33,10 +33,11 @@
   UNUSED_PARAMETER(yymajor);  /* Silence some compiler warnings */
   assert( TOKEN.z[0] );  /* The tokenizer always gives us a token */
   if (yypParser->is_fallback_failed && TOKEN.isReserved) {
-    diag_set(ClientError, ER_SQL_KEYWORD_IS_RESERVED, TOKEN.n, TOKEN.z,
-             TOKEN.n, TOKEN.z);
+    parser_diag_set(pParse, ER_SQL_KEYWORD_IS_RESERVED, TOKEN.n, TOKEN.z,
+                    TOKEN.n, TOKEN.z);
   } else {
-    diag_set(ClientError, ER_SQL_UNRECOGNIZED_SYNTAX, TOKEN.n, TOKEN.z);
+    parser_diag_set(pParse, ER_SQL_UNRECOGNIZED_SYNTAX, TOKEN.n, TOKEN.z, 0,
+                    NULL);
   }
   pParse->is_aborted = true;
 }
@@ -113,6 +114,35 @@ struct TrigEvent { int a; IdList * b; };
 static void disableLookaside(Parse *pParse){
   pParse->disableLookaside++;
   pParse->db->lookaside.bDisable++;
+}
+
+void parser_diag_set(struct Parse *parser, uint32_t errcode, uint32_t len_1,
+                            const char *str_1, uint32_t len_2,
+                            const char *str_2) {
+  const char *add = tt_sprintf(" on line %d at column %d",
+                                    parser->line_count, parser->line_pos);
+  switch (errcode) {
+  case ER_SQL_SYNTAX:
+    assert (str_1 != NULL && str_2 != NULL);
+    diag_set(ClientError, errcode, !parser->parse_only ? add : "", str_1,
+             str_2);
+    break;
+  case ER_SQL_KEYWORD_IS_RESERVED:
+    assert(str_1 != NULL && str_2 != NULL);
+    diag_set(ClientError, errcode, !parser->parse_only ? add : "", len_1, str_1,
+             len_2, str_2);
+    break;
+  case ER_SQL_UNRECOGNIZED_SYNTAX:
+  case ER_SQL_UNKNOWN_TOKEN:
+    assert (str_1 != NULL);
+    diag_set(ClientError, errcode, !parser->parse_only ? add : "", len_1,
+             str_1);
+    break;
+  case ER_SQL_PARSER_GENERIC:
+    assert (str_1 != NULL);
+    diag_set(ClientError, errcode, !parser->parse_only ? add : "", str_1);
+    break;
+  }
 }
 
 } // end %include
@@ -274,7 +304,7 @@ columnname(A) ::= nm(A) typedef(Y). {sqlAddColumn(pParse,&A,&Y);}
 %type nm {Token}
 nm(A) ::= id(A). {
   if(A.isReserved) {
-    diag_set(ClientError, ER_SQL_KEYWORD_IS_RESERVED, A.n, A.z, A.n, A.z);
+    parser_diag_set(pParse, ER_SQL_KEYWORD_IS_RESERVED, A.n, A.z, A.n, A.z);
     pParse->is_aborted = true;
   }
 }
@@ -1076,15 +1106,15 @@ expr(A) ::= VARIABLE(X).     {
   Token t = X;
   if (pParse->parse_only) {
     spanSet(&A, &t, &t);
-    diag_set(ClientError, ER_SQL_PARSER_GENERIC,
-             "bindings are not allowed in DDL");
+    parser_diag_set(pParse, ER_SQL_PARSER_GENERIC, 0, "bindings are not allowed"
+                    " in DDL", 0, NULL);
     pParse->is_aborted = true;
     A.pExpr = NULL;
   } else if (!(X.z[0]=='#' && sqlIsdigit(X.z[1]))) {
     u32 n = X.n;
     spanExpr(&A, pParse, TK_VARIABLE, X);
     if (A.pExpr->u.zToken[0] == '?' && n > 1) {
-      diag_set(ClientError, ER_SQL_UNRECOGNIZED_SYNTAX, t.n, t.z);
+      parser_diag_set(pParse, ER_SQL_UNRECOGNIZED_SYNTAX, t.n, t.z, 0, NULL);
       pParse->is_aborted = true;
     } else {
       sqlExprAssignVarNumber(pParse, A.pExpr, n);
@@ -1092,7 +1122,7 @@ expr(A) ::= VARIABLE(X).     {
   }else{
     assert( t.n>=2 );
     spanSet(&A, &t, &t);
-    diag_set(ClientError, ER_SQL_UNRECOGNIZED_SYNTAX, t.n, t.z);
+    parser_diag_set(pParse, ER_SQL_UNRECOGNIZED_SYNTAX, t.n, t.z, 0, NULL);
     pParse->is_aborted = true;
     A.pExpr = NULL;
   }
@@ -1608,8 +1638,9 @@ trigger_event(A) ::= UPDATE(X).          {A.a = @X; /*A-overwrites-X*/ A.b = 0;}
 trigger_event(A) ::= UPDATE OF idlist(X).{A.a = TK_UPDATE; A.b = X;}
 
 foreach_clause ::= . {
-  diag_set(ClientError, ER_SQL_PARSER_GENERIC, "FOR EACH STATEMENT "
-	       "triggers are not implemented, please supply FOR EACH ROW clause");
+  parser_diag_set(pParse, ER_SQL_PARSER_GENERIC, 0, "FOR EACH STATEMENT "
+                  "triggers are not implemented, please supply FOR EACH ROW "
+                  "clause", 0, NULL);
   pParse->is_aborted = true;
 }
 foreach_clause ::= FOR EACH ROW.
@@ -1639,8 +1670,9 @@ trigger_cmd_list(A) ::= trigger_cmd(A) SEMI. {
 trnm(A) ::= nm(A).
 trnm(A) ::= nm DOT nm(X). {
   A = X;
-  diag_set(ClientError, ER_SQL_PARSER_GENERIC, "qualified table names are not "\
-           "allowed on INSERT, UPDATE, and DELETE statements within triggers");
+  parser_diag_set(pParse, ER_SQL_PARSER_GENERIC, 0, "qualified table names are "
+                  "not allowed on INSERT, UPDATE, and DELETE statements within "
+                  "triggers", 0, NULL);
   pParse->is_aborted = true;
 }
 
@@ -1650,14 +1682,15 @@ trnm(A) ::= nm DOT nm(X). {
 //
 tridxby ::= .
 tridxby ::= INDEXED BY nm. {
-  diag_set(ClientError, ER_SQL_SYNTAX, "trigger body", "the INDEXED BY clause "\
-           "is not allowed on UPDATE or DELETE statements within triggers");
+  parser_diag_set(pParse, ER_SQL_SYNTAX, 0, "trigger body", 0, "the INDEXED BY "
+                  "clause is not allowed on UPDATE or DELETE statements within "
+                  "triggers");
   pParse->is_aborted = true;
 }
 tridxby ::= NOT INDEXED. {
-  diag_set(ClientError, ER_SQL_SYNTAX, "trigger body", "the NOT INDEXED "\
-           "clause is not allowed on UPDATE or DELETE statements within "\
-           "triggers");
+  parser_diag_set(pParse, ER_SQL_SYNTAX, 0, "trigger body", 0, "the NOT INDEXED "
+                  "clause is not allowed on UPDATE or DELETE statements within "
+                  "triggers");
   pParse->is_aborted = true;
 }
 

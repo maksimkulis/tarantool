@@ -1123,7 +1123,7 @@ test:do_catchsql_test(
     [[
         update test set a = 2, a = 3;
     ]],
-    {1, "set id list: duplicate column name A"})
+    {1, "Syntax error: set id list: duplicate column name A"})
 
 test:do_execsql_test(
   "insert-15.2",

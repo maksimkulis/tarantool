@@ -2920,7 +2920,7 @@ sqlSrcListAppendFromTerm(Parse * pParse,	/* Parsing context */
 	struct SrcList_item *pItem;
 	sql *db = pParse->db;
 	if (!p && (pOn || pUsing)) {
-		diag_set(ClientError, ER_SQL_SYNTAX, "FROM clause",
+		diag_set(ClientError, ER_SQL_SYNTAX, "", "FROM clause",
 			 "a JOIN clause is required before ON and USING");
 		pParse->is_aborted = true;
 		goto append_from_error;
@@ -3117,10 +3117,10 @@ sqlWithAdd(Parse * pParse,	/* Parsing context */
 	}
 	if (pWith != NULL) {
 		int i;
-		const char *err = "Ambiguous table name in WITH query: %s";
+		const char *err = "ambiguous table name in WITH query: %s";
 		for (i = 0; i < pWith->nCte; i++) {
 			if (strcmp(name, pWith->a[i].zName) == 0) {
-				diag_set(ClientError, ER_SQL_PARSER_GENERIC,
+				diag_set(ClientError, ER_SQL_PARSER_GENERIC, "",
 					 tt_sprintf(err, name));
 				pParse->is_aborted = true;
 			}
@@ -3208,8 +3208,8 @@ int
 sql_add_autoincrement(struct Parse *parse_context, uint32_t fieldno)
 {
 	if (parse_context->create_table_def.has_autoinc) {
-		diag_set(ClientError, ER_SQL_SYNTAX, "CREATE TABLE", "Table "
-			 "must feature at most one AUTOINCREMENT field");
+		diag_set(ClientError, ER_SQL_SYNTAX, "", "CREATE TABLE",
+			 "table must feature at most one AUTOINCREMENT field");
 		parse_context->is_aborted = true;
 		return -1;
 	}

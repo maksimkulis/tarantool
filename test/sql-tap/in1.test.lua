@@ -725,7 +725,7 @@ test:do_catchsql_test(
         );
     ]], {
         -- <in-12.6>
-        1, "SELECTs to the left and right of UNION ALL do not have the same number of result columns"
+        1, "Syntax error: SELECTs to the left and right of UNION ALL do not have the same number of result columns"
         -- </in-12.6>
     })
 
@@ -737,7 +737,7 @@ test:do_catchsql_test(
         );
     ]], {
         -- <in-12.7>
-        1, "SELECTs to the left and right of UNION do not have the same number of result columns"
+        1, "Syntax error: SELECTs to the left and right of UNION do not have the same number of result columns"
         -- </in-12.7>
     })
 
@@ -749,7 +749,7 @@ test:do_catchsql_test(
         );
     ]], {
         -- <in-12.8>
-        1, "SELECTs to the left and right of EXCEPT do not have the same number of result columns"
+        1, "Syntax error: SELECTs to the left and right of EXCEPT do not have the same number of result columns"
         -- </in-12.8>
     })
 
@@ -761,7 +761,7 @@ test:do_catchsql_test(
         );
     ]], {
         -- <in-12.9>
-        1, "SELECTs to the left and right of INTERSECT do not have the same number of result columns"
+        1, "Syntax error: SELECTs to the left and right of INTERSECT do not have the same number of result columns"
         -- </in-12.9>
     })
 
@@ -775,7 +775,7 @@ test:do_catchsql_test(
         );
     ]], {
         -- <in-12.10>
-        1, "SELECTs to the left and right of UNION ALL do not have the same number of result columns"
+        1, "Syntax error: SELECTs to the left and right of UNION ALL do not have the same number of result columns"
         -- </in-12.10>
     })
 
@@ -787,7 +787,7 @@ test:do_catchsql_test(
         );
     ]], {
         -- <in-12.11>
-        1, "SELECTs to the left and right of UNION do not have the same number of result columns"
+        1, "Syntax error: SELECTs to the left and right of UNION do not have the same number of result columns"
         -- </in-12.11>
     })
 
@@ -799,7 +799,7 @@ test:do_catchsql_test(
         );
     ]], {
         -- <in-12.12>
-        1, "SELECTs to the left and right of EXCEPT do not have the same number of result columns"
+        1, "Syntax error: SELECTs to the left and right of EXCEPT do not have the same number of result columns"
         -- </in-12.12>
     })
 
@@ -811,7 +811,7 @@ test:do_catchsql_test(
         );
     ]], {
         -- <in-12.13>
-        1, "SELECTs to the left and right of INTERSECT do not have the same number of result columns"
+        1, "Syntax error: SELECTs to the left and right of INTERSECT do not have the same number of result columns"
         -- </in-12.13>
     })
 
@@ -835,7 +835,7 @@ test:do_catchsql_test(
         );
     ]], {
         -- <in-12.15>
-        1, "SELECTs to the left and right of UNION ALL do not have the same number of result columns"
+        1, "Syntax error: SELECTs to the left and right of UNION ALL do not have the same number of result columns"
         -- </in-12.15>
     })
 

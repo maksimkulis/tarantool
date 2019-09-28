@@ -539,7 +539,7 @@ test:do_catchsql_test(
         SELECT SUM(min(f1)) FROM test1
     ]], {
         -- <select1-2.20>
-        1, "misuse of aggregate function MIN()"
+        1, "Syntax error: misuse of aggregate function MIN()"
         -- </select1-2.20>
     })
 
@@ -551,7 +551,7 @@ test:do_catchsql_test(
         SELECT min(f1) AS m FROM test1 GROUP BY f1 HAVING max(m+5)<10
     ]], {
         -- <select1-2.21>
-        1, "misuse of aliased aggregate M"
+        1, "Syntax error: misuse of aliased aggregate M"
         -- </select1-2.21>
     })
 
@@ -563,7 +563,7 @@ test:do_catchsql_test(
         HAVING max(m+5)<10
     ]], {
         -- <select1-2.22>
-        1, "misuse of aliased aggregate M"
+        1, "Syntax error: misuse of aliased aggregate M"
         -- </select1-2.22>
     })
 
@@ -577,7 +577,7 @@ test:do_catchsql_test(
 --   catchsql {
 --     SELECT count(a) AS cn FROM tkt2526 GROUP BY a HAVING cn<max(cn)
 --   }
--- } {1 {misuse of aliased aggregate cn}}
+-- } {1 {Syntax error: misuse of aliased aggregate cn}}
 -- WHERE clause expressions
 --
 test:do_catchsql_test(
@@ -691,7 +691,7 @@ test:do_catchsql_test(
         SELECT f1 FROM test1 WHERE count(f1,f2)!=11
     ]], {
         -- <select1-3.9>
-        1, "misuse of aggregate function COUNT()"
+        1, "Syntax error: misuse of aggregate function COUNT()"
         -- </select1-3.9>
     })
 
@@ -733,7 +733,7 @@ test:do_catchsql_test(
         SELECT f1 FROM test1 ORDER BY min(f1)
     ]], {
         -- <select1-4.4>
-        1, "misuse of aggregate: MIN()"
+        1, "Syntax error: misuse of aggregate: MIN()"
         -- </select1-4.4>
     })
 
@@ -743,7 +743,7 @@ test:do_catchsql_test(
         INSERT INTO test1(f1) SELECT f1 FROM test1 ORDER BY min(f1);
     ]], {
         -- <select1-4.5>
-        1, "misuse of aggregate: MIN()"
+        1, "Syntax error: misuse of aggregate: MIN()"
         -- </select1-4.5>
     })
 
@@ -840,7 +840,7 @@ test:do_catchsql_test(
         SELECT * FROM t5 ORDER BY 3;
     ]], {
         -- <select1-4.10.1>
-        1, "Error at ORDER BY in place 1: term out of range - should be between 1 and 2"
+        1, "Syntax error: error at ORDER BY in place 1: term out of range - should be between 1 and 2"
         -- </select1-4.10.1>
     })
 
@@ -850,7 +850,7 @@ test:do_catchsql_test(
         SELECT * FROM t5 ORDER BY -1;
     ]], {
         -- <select1-4.10.2>
-        1, "Error at ORDER BY in place 1: term out of range - should be between 1 and 2"
+        1, "Syntax error: error at ORDER BY in place 1: term out of range - should be between 1 and 2"
         -- </select1-4.10.2>
     })
 
@@ -1080,7 +1080,7 @@ test:do_catchsql2_test(
     [[SELECT A.f1, f1 FROM test1 as A, test1 as B 
          ORDER BY f2]], {
         -- <select1-6.8>
-        1, "ambiguous column name: F1"
+        1, "Syntax error: ambiguous column name: F1"
         -- </select1-6.8>
     })
 
@@ -1089,7 +1089,7 @@ test:do_catchsql2_test(
     [[SELECT A.f1, B.f1 FROM test1 as A, test1 as B 
          ORDER BY f2]], {
         -- <select1-6.8b>
-        1, "ambiguous column name: F2"
+        1, "Syntax error: ambiguous column name: F2"
         -- </select1-6.8b>
     })
 
@@ -1098,7 +1098,7 @@ test:do_catchsql2_test(
     [[SELECT A.f1, f1 FROM test1 as A, test1 as A 
          ORDER BY f2]], {
         -- <select1-6.8c>
-        1, "ambiguous column name: A.F1"
+        1, "Syntax error: ambiguous column name: A.F1"
         -- </select1-6.8c>
     })
 
@@ -1334,7 +1334,7 @@ test:do_catchsql2_test(
             ORDER BY f2+101;
         ]], {
             -- <select1-6.11>
-            1, "Error at ORDER BY in place 1: term does not match any column in the result set"
+            1, "Syntax error: error at ORDER BY in place 1: term does not match any column in the result set"
             -- </select1-6.11>
         })
 
@@ -1406,7 +1406,7 @@ test:do_catchsql_test(
         SELECT f1 FROM test1 WHERE f2=;
     ]], {
         -- <select1-7.1>
-        1, [[Syntax error near ';']]
+        1, [[Syntax error on line 1 at column 39 near ';']]
         -- </select1-7.1>
     })
 
@@ -1416,7 +1416,7 @@ test:do_catchsql_test(
             SELECT f1 FROM test1 UNION SELECT WHERE;
         ]], {
             -- <select1-7.2>
-            1, [[Keyword 'WHERE' is reserved. Please use double quotes if 'WHERE' is an identifier.]]
+            1, [[Syntax error on line 1 at column 47: keyword 'WHERE' is reserved. Please use double quotes if 'WHERE' is an identifier.]]
             -- </select1-7.2>
         })
 
@@ -1428,7 +1428,7 @@ test:do_catchsql_test(
     [[
         SELECT f1 FROM test1 as "hi", test2 as]], {
         -- <select1-7.3>
-        1, [[Keyword 'as' is reserved. Please use double quotes if 'as' is an identifier.]]
+        1, [[Syntax error on line 1 at column 47: keyword 'as' is reserved. Please use double quotes if 'as' is an identifier.]]
         -- </select1-7.3>
     })
 
@@ -1438,7 +1438,7 @@ test:do_catchsql_test(
         SELECT f1 FROM test1 ORDER BY;
     ]], {
         -- <select1-7.4>
-        1, [[Syntax error near ';']]
+        1, [[Syntax error on line 1 at column 38 near ';']]
         -- </select1-7.4>
     })
 
@@ -1448,7 +1448,7 @@ test:do_catchsql_test(
         SELECT f1 FROM test1 ORDER BY f1 desc, f2 where;
     ]], {
         -- <select1-7.5>
-        1, [[Keyword 'where' is reserved. Please use double quotes if 'where' is an identifier.]]
+        1, [[Syntax error on line 1 at column 51: keyword 'where' is reserved. Please use double quotes if 'where' is an identifier.]]
         -- </select1-7.5>
     })
 
@@ -1458,7 +1458,7 @@ test:do_catchsql_test(
         SELECT count(f1,f2 FROM test1;
     ]], {
         -- <select1-7.6>
-        1, [[Keyword 'FROM' is reserved. Please use double quotes if 'FROM' is an identifier.]]
+        1, [[Syntax error on line 1 at column 28: keyword 'FROM' is reserved. Please use double quotes if 'FROM' is an identifier.]]
         -- </select1-7.6>
     })
 
@@ -1468,7 +1468,7 @@ test:do_catchsql_test(
         SELECT count(f1,f2+) FROM test1;
     ]], {
         -- <select1-7.7>
-        1, [[Syntax error near ')']]
+        1, [[Syntax error on line 1 at column 28 near ')']]
         -- </select1-7.7>
     })
 
@@ -1478,7 +1478,7 @@ test:do_catchsql_test(
         SELECT f1 FROM test1 ORDER BY f2, f1+;
     ]], {
         -- <select1-7.8>
-        1, [[Syntax error near ';']]
+        1, [[Syntax error on line 1 at column 46 near ';']]
         -- </select1-7.8>
     })
 
@@ -1488,7 +1488,7 @@ test:do_catchsql_test(
         SELECT f1 FROM test1 LIMIT 5+3 OFFSET 11 ORDER BY f2;
     ]], {
         -- <select1-7.9>
-        1, [[Keyword 'ORDER' is reserved. Please use double quotes if 'ORDER' is an identifier.]]
+        1, [[Syntax error on line 1 at column 50: keyword 'ORDER' is reserved. Please use double quotes if 'ORDER' is an identifier.]]
         -- </select1-7.9>
     })
 

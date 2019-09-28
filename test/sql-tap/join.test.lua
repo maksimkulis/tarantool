@@ -520,7 +520,7 @@ test:do_catchsql_test(
         SELECT * FROM t1 NATURAL JOIN t2 ON t1.a=t2.b;
     ]], {
         -- <join-3.1>
-        1, "a NATURAL join may not have an ON or USING clause"
+        1, "Syntax error: a NATURAL join may not have an ON or USING clause"
         -- </join-3.1>
     })
 
@@ -530,7 +530,7 @@ test:do_catchsql_test(
         SELECT * FROM t1 NATURAL JOIN t2 USING(b);
     ]], {
         -- <join-3.2>
-        1, "a NATURAL join may not have an ON or USING clause"
+        1, "Syntax error: a NATURAL join may not have an ON or USING clause"
         -- </join-3.2>
     })
 
@@ -540,7 +540,7 @@ test:do_catchsql_test(
         SELECT * FROM t1 JOIN t2 ON t1.a=t2.b USING(b);
     ]], {
         -- <join-3.3>
-        1, "cannot have both ON and USING clauses in the same join"
+        1, "Syntax error: cannot have both ON and USING clauses in the same join"
         -- </join-3.3>
     })
 
@@ -550,7 +550,7 @@ test:do_catchsql_test(
         SELECT * FROM t1 JOIN t2 USING(a);
     ]], {
         -- <join-3.4.1>
-        1, "cannot join using column A - column not present in both tables"
+        1, "Syntax error: cannot join using column A - column not present in both tables"
         -- </join-3.4.1>
     })
 
@@ -560,7 +560,7 @@ test:do_catchsql_test(
         SELECT * FROM t1 JOIN t2 USING(d);
     ]], {
         -- <join-3.4.2>
-        1, "cannot join using column D - column not present in both tables"
+        1, "Syntax error: cannot join using column D - column not present in both tables"
         -- </join-3.4.2>
     })
 
@@ -590,7 +590,7 @@ test:do_catchsql_test(
         SELECT * FROM t1 INNER OUTER JOIN t2;
     ]], {
         -- <join-3.7>
-        1, "unknown or unsupported join type: INNER OUTER"
+        1, "Syntax error: unknown or unsupported join type: INNER OUTER"
         -- </join-3.7>
     })
 
@@ -600,7 +600,7 @@ test:do_catchsql_test(
         SELECT * FROM t1 INNER OUTER CROSS JOIN t2;
     ]], {
         -- <join-3.8>
-        1, "unknown or unsupported join type: INNER OUTER CROSS"
+        1, "Syntax error: unknown or unsupported join type: INNER OUTER CROSS"
         -- </join-3.8>
     })
 
@@ -610,7 +610,7 @@ test:do_catchsql_test(
         SELECT * FROM t1 OUTER NATURAL INNER JOIN t2;
     ]], {
         -- <join-3.9>
-        1, "unknown or unsupported join type: OUTER NATURAL INNER"
+        1, "Syntax error: unknown or unsupported join type: OUTER NATURAL INNER"
         -- </join-3.9>
     })
 
@@ -620,7 +620,7 @@ test:do_catchsql_test(
         SELECT * FROM t1 LEFT BOGUS JOIN t2;
     ]], {
         -- <join-3.10>
-        1, "unknown or unsupported join type: LEFT BOGUS"
+        1, "Syntax error: unknown or unsupported join type: LEFT BOGUS"
         -- </join-3.10>
     })
 
@@ -630,7 +630,7 @@ test:do_catchsql_test(
         SELECT * FROM t1 INNER BOGUS CROSS JOIN t2;
     ]], {
         -- <join-3.11>
-        1, "unknown or unsupported join type: INNER BOGUS CROSS"
+        1, "Syntax error: unknown or unsupported join type: INNER BOGUS CROSS"
         -- </join-3.11>
     })
 
@@ -640,7 +640,7 @@ test:do_catchsql_test(
         SELECT * FROM t1 NATURAL AWK SED JOIN t2;
     ]], {
         -- <join-3.12>
-        1, "unknown or unsupported join type: NATURAL AWK SED"
+        1, "Syntax error: unknown or unsupported join type: NATURAL AWK SED"
         -- </join-3.12>
     })
 

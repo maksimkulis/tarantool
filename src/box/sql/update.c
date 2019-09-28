@@ -156,7 +156,7 @@ sqlUpdate(Parse * pParse,		/* The parser context */
 					err = tt_sprintf(err,
 							 pChanges->a[i].zName);
 					diag_set(ClientError,
-						 ER_SQL_PARSER_GENERIC,
+						 ER_SQL_PARSER_GENERIC, "",
 						 err);
 					pParse->is_aborted = true;
 					goto update_cleanup;

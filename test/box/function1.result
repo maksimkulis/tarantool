@@ -387,7 +387,7 @@ test_run:cmd("setopt delimiter ''");
 box.execute('SELECT "function1.divide"()')
 ---
 - null
-- function function1.divide() is not available in SQL
+- 'Syntax error: function function1.divide() is not available in SQL'
 ...
 box.func["function1.divide"]:drop()
 ---

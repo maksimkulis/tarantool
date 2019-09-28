@@ -123,7 +123,7 @@ test:do_catchsql_test(3.1, [[
   SELECT * FROM tmp1;
 ]], {
   -- <3.1>
-  1, "circular reference: TMP1"
+  1, "Syntax error: circular reference: TMP1"
   -- </3.1>
 })
 
@@ -134,7 +134,7 @@ test:do_catchsql_test(3.2, [[
   SELECT * FROM tmp;
 ]], {
   -- <3.2>
-  1, "Ambiguous table name in WITH query: TMP"
+  1, "Syntax error: ambiguous table name in WITH query: TMP"
   -- </3.2>
 })
 
@@ -178,7 +178,7 @@ test:do_catchsql_test(3.6, [[
   SELECT * FROM tmp;
 ]], {
   -- <3.6>
-  1, [[Keyword 'SELECT' is reserved. Please use double quotes if 'SELECT' is an identifier.]]
+  1, [[Syntax error on line 2 at column 3: keyword 'SELECT' is reserved. Please use double quotes if 'SELECT' is an identifier.]]
   -- </3.6>
 })
 
@@ -334,7 +334,7 @@ test:do_catchsql_test("5.6.1", [[
   SELECT * FROM i;
 ]], {
   -- <5.6.1>
-  1, "table I has 1 values for 2 columns"
+  1, "Syntax error: table I has 1 values for 2 columns"
   -- </5.6.1>
 })
 
@@ -343,7 +343,7 @@ test:do_catchsql_test("5.6.2", [[
   SELECT * FROM i;
 ]], {
   -- <5.6.2>
-  1, "table I has 2 values for 1 columns"
+  1, "Syntax error: table I has 2 values for 1 columns"
   -- </5.6.2>
 })
 
@@ -353,7 +353,7 @@ test:do_catchsql_test("5.6.3", [[
   SELECT * FROM i;
 ]], {
   -- <5.6.3>
-  1, "table I has 2 values for 1 columns"
+  1, "Syntax error: table I has 2 values for 1 columns"
   -- </5.6.3>
 })
 
@@ -362,7 +362,7 @@ test:do_catchsql_test("5.6.4", [[
   SELECT * FROM i;
 ]], {
   -- <5.6.4>
-  1, "table I has 2 values for 1 columns"
+  1, "Syntax error: table I has 2 values for 1 columns"
   -- </5.6.4>
 })
 
@@ -371,7 +371,7 @@ test:do_catchsql_test("5.6.5", [[
   SELECT * FROM i;
 ]], {
   -- <5.6.5>
-  1, "SELECTs to the left and right of UNION ALL do not have the same number of result columns"
+  1, "Syntax error: SELECTs to the left and right of UNION ALL do not have the same number of result columns"
   -- </5.6.5>
 })
 
@@ -380,7 +380,7 @@ test:do_catchsql_test("5.6.6", [[
   SELECT * FROM i;
 ]], {
   -- <5.6.6>
-  1, "SELECTs to the left and right of UNION ALL do not have the same number of result columns"
+  1, "Syntax error: SELECTs to the left and right of UNION ALL do not have the same number of result columns"
   -- </5.6.6>
 })
 
@@ -389,7 +389,7 @@ test:do_catchsql_test("5.6.7", [[
   SELECT * FROM i;
 ]], {
   -- <5.6.7>
-  1, "table I has 2 values for 1 columns"
+  1, "Syntax error: table I has 2 values for 1 columns"
   -- </5.6.7>
 })
 
@@ -501,7 +501,7 @@ test:do_catchsql_test(7.4, [[
   SELECT id FROM t;
 ]], {
   -- <7.4>
-  1, "recursive reference in a subquery: T"
+  1, "Syntax error: recursive reference in a subquery: T"
   -- </7.4>
 })
 
@@ -514,7 +514,7 @@ test:do_catchsql_test(7.5, [[
   SELECT id FROM t;
 ]], {
   -- <7.5>
-  1, "multiple recursive references: T"
+  1, "Syntax error: multiple recursive references: T"
   -- </7.5>
 })
 
@@ -527,7 +527,7 @@ test:do_catchsql_test(7.6, [[
   SELECT id FROM t;
 ]], {
   -- <7.6>
-  1, "circular reference: T"
+  1, "Syntax error: circular reference: T"
   -- </7.6>
 })
 
@@ -782,7 +782,7 @@ test:do_catchsql_test("10.7.1", [[
   SELECT * FROM t
 ]], {
   -- <10.7.1>
-  1, "Error at ORDER BY in place 1: term does not match any column in the result set"
+  1, "Syntax error: error at ORDER BY in place 1: term does not match any column in the result set"
   -- </10.7.1>
 })
 
@@ -1036,7 +1036,7 @@ test:do_catchsql_test(13.3, [[
   SELECT i FROM c;
 ]], {
   -- <13.3>
-  1, "table C has 1 values for 2 columns"
+  1, "Syntax error: table C has 1 values for 2 columns"
   -- </13.3>
 })
 

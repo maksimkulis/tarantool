@@ -551,28 +551,28 @@ test:do_execsql_test(
 test:do_catchsql_test(
     "collation-2.7.1",
     'SELECT one COLLATE "binary" FROM test1',
-    {1, "COLLATE clause can't be used with non-string arguments"})
+    {1, "Syntax error: COLLATE clause can't be used with non-string arguments"})
 
 test:do_catchsql_test(
     "collation-2.7.2",
     'SELECT one COLLATE "unicode_ci" FROM test1',
-    {1, "COLLATE clause can't be used with non-string arguments"})
+    {1, "Syntax error: COLLATE clause can't be used with non-string arguments"})
 
 test:do_catchsql_test(
     "collation-2.7.3",
     'SELECT two COLLATE "binary" FROM test1',
-    {1, "COLLATE clause can't be used with non-string arguments"})
+    {1, "Syntax error: COLLATE clause can't be used with non-string arguments"})
 
 
 test:do_catchsql_test(
     "collation-2.7.4",
     'SELECT (one + two) COLLATE "binary" FROM test1',
-    {1, "COLLATE clause can't be used with non-string arguments"})
+    {1, "Syntax error: COLLATE clause can't be used with non-string arguments"})
 
 test:do_catchsql_test(
     "collation-2.7.5",
     'SELECT (SELECT one FROM test1) COLLATE "binary"',
-    {1, "COLLATE clause can't be used with non-string arguments"})
+    {1, "Syntax error: COLLATE clause can't be used with non-string arguments"})
 
 test:do_execsql_test(
     "collation-2.7.6",
@@ -582,32 +582,32 @@ test:do_execsql_test(
 test:do_catchsql_test(
     "collation-2.7.7",
     'SELECT RANDOM() COLLATE "binary"',
-    {1, "COLLATE clause can't be used with non-string arguments"})
+    {1, "Syntax error: COLLATE clause can't be used with non-string arguments"})
 
 test:do_catchsql_test(
     "collation-2.7.8",
     'SELECT LENGTH(\'A\') COLLATE "binary"',
-    {1, "COLLATE clause can't be used with non-string arguments"})
+    {1, "Syntax error: COLLATE clause can't be used with non-string arguments"})
 
 test:do_catchsql_test(
     "collation-2.7.9",
     'SELECT TRUE COLLATE "unicode"',
-    {1, "COLLATE clause can't be used with non-string arguments"})
+    {1, "Syntax error: COLLATE clause can't be used with non-string arguments"})
 
 test:do_catchsql_test(
     "collation-2.7.10",
     'SELECT NOT TRUE COLLATE "unicode"',
-    {1, "COLLATE clause can't be used with non-string arguments"})
+    {1, "Syntax error: COLLATE clause can't be used with non-string arguments"})
 
 test:do_catchsql_test(
     "collation-2.7.11",
     'SELECT TRUE AND TRUE COLLATE "unicode"',
-    {1, "COLLATE clause can't be used with non-string arguments"})
+    {1, "Syntax error: COLLATE clause can't be used with non-string arguments"})
 
 test:do_catchsql_test(
     "collation-2.7.12",
     'SELECT 1 | 1 COLLATE "unicode"',
-    {1, "COLLATE clause can't be used with non-string arguments"})
+    {1, "Syntax error: COLLATE clause can't be used with non-string arguments"})
 
 test:do_execsql_test(
     "collation-2.7.14",
