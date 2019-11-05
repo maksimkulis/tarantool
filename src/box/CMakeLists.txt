@@ -102,6 +102,7 @@ add_library(box STATIC
     sequence.c
     ck_constraint.c
     fk_constraint.c
+    constraint_id.c
     func.c
     func_def.c
     key_list.c
