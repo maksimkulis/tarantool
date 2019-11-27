@@ -519,7 +519,7 @@ sqlGetInt64(const char *zNum, int64_t *pValue)
 			u = u * 16 + sqlHexToInt(zNum[i]);
 		}
 		if ((u & 0x8000000000000000) == 0 && sqlIsxdigit(zNum[i]) == 0) {
-			memcpy(pValue, &u, 8);
+			memcpy(pValue, &u, 4);
 			return 1;
 		} else {
 			return 0;
@@ -527,7 +527,7 @@ sqlGetInt64(const char *zNum, int64_t *pValue)
 	}
 	while (zNum[0] == '0')
 		zNum++;
-	for (i = 0; i < 19 && (c = zNum[i] - '0') >= 0 && c <= 9; i++) {
+	for (i = 0; i < 20 && (c = zNum[i] - '0') >= 0 && c <= 9; i++) {
 		v = v * 10 + c;
 	}
 
@@ -537,7 +537,7 @@ sqlGetInt64(const char *zNum, int64_t *pValue)
 	/* The longest decimal representations of a 64 bit integer 
 	fits 19 digits */
 	testcase(i == 19);
-	if (i > 18)
+	if (i > 19)
 		return 0;
 	testcase(v - neg == 9223372036854775807);
 	if (v - neg > 9223372036854775807)

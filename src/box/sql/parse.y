@@ -1083,8 +1083,7 @@ term(A) ::= STRING(X).     {spanExpr(&A,pParse,@X,X);/*A-overwrites-X*/}
 term(A) ::= FALSE(X) . {spanExpr(&A,pParse,@X,X);/*A-overwrites-X*/}
 term(A) ::= TRUE(X) . {spanExpr(&A,pParse,@X,X);/*A-overwrites-X*/}
 term(A) ::= UNKNOWN(X) . {spanExpr(&A,pParse,@X,X);/*A-overwrites-X*/}
-
-term(A) ::= INTEGER(X)|FLOAT(X) . {spanNumericExpr(&A,pParse,@X,X);}
+term(A) ::= INTEGER|FLOAT(X) . {spanNumericExpr(&A,pParse,@X,X);/*A-overwrites-X*/}
 
 expr(A) ::= VARIABLE(X).     {
   Token t = X;
