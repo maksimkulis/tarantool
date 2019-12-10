@@ -14,7 +14,7 @@ git_submodule_update:
 		git submodule update --recursive --init
 
 # Pass *_no_deps goals to .travis.mk.
-test_%_no_deps: git_submodule_update
+test_%: git_submodule_update
 	${TRAVIS_MAKE} $@
 
 # #######################################################
@@ -105,10 +105,3 @@ vms_shutdown:
 package: git_submodule_update
 	git clone https://github.com/packpack/packpack.git packpack
 	PACKPACK_EXTRA_DOCKER_RUN_PARAMS='--network=host' ./packpack/packpack
-
-# ############
-# Static build
-# ############
-
-static_build:
-	docker build --network=host --build-arg RUN_TESTS="${RUN_TESTS}" -f Dockerfile.staticbuild .

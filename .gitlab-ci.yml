@@ -236,9 +236,15 @@ debian_10:
     OS: 'debian'
     DIST: 'buster'
 
+# Static builds
+
 static_build:
-  <<: *deploy_test_definition
-  variables:
-    RUN_TESTS: 'ON'
+  <<: *release_only_definition
+  <<: *docker_test_definition
   script:
-    - ${GITLAB_MAKE} static_build
+    - ${GITLAB_MAKE} test_static_build
+
+static_docker_build:
+  <<: *deploy_test_definition
+  script:
+    - ${GITLAB_MAKE} test_static_docker_build
