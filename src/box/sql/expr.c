@@ -59,7 +59,7 @@ sql_expr_type(struct Expr *pExpr)
 		el = pExpr->x.pSelect->pEList;
 		return sql_expr_type(el->a[0].pExpr);
 	case TK_CAST:
-		assert(!ExprHasProperty(pExpr, EP_IntValue));
+		assert(!ExprHasProperty(pExpr, EP_IntValue | EP_LIntValue));
 		return pExpr->type;
 	case TK_AGG_COLUMN:
 	case TK_COLUMN:
@@ -969,12 +969,10 @@ sql_expr_new_int(struct sql *db, const struct Token *token)
 {
 	struct Expr *e = sql_expr_new_empty(db, TK_INTEGER, 0);
 	if (e != NULL) {
-		e->flags |= EP_IntValue;
-		int val;
-		if (sqlGetInt32(token->z, &val))
-			e->u.iValue = val;
-		else 
-			sqlGetInt64(token->z, &e->u.liValue);
+		e->flags |= EP_LIntValue;
+		int64_t val = 0;
+		sqlGetInt64(token->z, &val);
+		e->u.liValue = val;
 	}
 	return e;
 }
@@ -1217,8 +1215,8 @@ sqlExprAssignVarNumber(Parse * pParse, Expr * pExpr, u32 n)
 
 	if (pExpr == 0)
 		return;
-	assert(!ExprHasProperty
-	       (pExpr, EP_IntValue | EP_Reduced | EP_TokenOnly));
+	assert(!ExprHasProperty(pExpr, EP_IntValue | EP_LIntValue
+		| EP_Reduced | EP_TokenOnly | EP_FlValue));
 	z = pExpr->u.zToken;
 	assert(z != 0);
 	assert(z[0] != 0);
@@ -1296,7 +1294,8 @@ sqlExprDeleteNN(sql * db, Expr * p, bool extern_alloc)
 {
 	assert(p != 0);
 	/* Sanity check: Assert that the IntValue is non-negative if it exists */
-	assert(!ExprHasProperty(p, EP_IntValue) || p->u.iValue >= 0);
+	assert(!ExprHasProperty(p, EP_IntValue | EP_LIntValue) || p->u.iValue >= 0 
+	|| p->u.liValue >= 0);
 #ifdef SQL_DEBUG
 	if (ExprHasProperty(p, EP_Leaf) && !ExprHasProperty(p, EP_TokenOnly)) {
 		assert(p->pLeft == 0);
@@ -1413,7 +1412,8 @@ static int
 dupedExprNodeSize(Expr * p, int flags)
 {
 	int nByte = dupedExprStructSize(p, flags) & 0xfff;
-	if (!ExprHasProperty(p, EP_IntValue) && p->u.zToken) {
+	if ( !(ExprHasProperty(p, EP_IntValue | EP_LIntValue | EP_FlValue)) && 
+	p->u.zToken) {
 		nByte += sqlStrlen30(p->u.zToken) + 1;
 	}
 	return ROUND8(nByte);
@@ -1465,8 +1465,9 @@ sql_expr_dup(struct sql *db, struct Expr *p, int flags, char **buffer)
 		const unsigned nStructSize = dupedExprStructSize(p, flags);
 		const int nNewSize = nStructSize & 0xfff;
 		int nToken;
-		if (!ExprHasProperty(p, EP_IntValue) && p->u.zToken)
-			nToken = sqlStrlen30(p->u.zToken) + 1;
+		if ( !(ExprHasProperty(p, EP_IntValue) || !ExprHasProperty(p, EP_LIntValue)
+		|| !ExprHasProperty(p, EP_FlValue)) && p->u.zToken )
+			nToken = sqlStrlen30(p->u.zToken) + 1; 
 		else
 			nToken = 0;
 		if (flags) {
@@ -2170,16 +2171,19 @@ sqlExprIsConstantOrFunction(Expr * p, u8 isInit)
 int
 sqlExprIsInteger(Expr * p, int *pValue)
 {
-	int rc = 0;
+	int64_t rc = 0;
 
 	/* If an expression is an integer literal that fits in a signed 32-bit
 	 * integer, then the EP_IntValue flag will have already been set
 	 */
-	assert(p->op != TK_INTEGER || (p->flags & EP_IntValue) != 0
-	       || sqlGetInt32(p->u.zToken, &rc) == 0);
+	assert(p->op != TK_INTEGER || (p->flags & (EP_IntValue | EP_LIntValue)) != 0
+	       || sqlGetInt64(p->u.zToken, &rc) == 0);
 
 	if (p->flags & EP_IntValue) {
 		*pValue = p->u.iValue;
+		return 1;
+	} else if (p->flags & EP_LIntValue) {
+		*pValue = p->u.liValue;
 		return 1;
 	}
 	switch (p->op) {
@@ -3320,6 +3324,11 @@ expr_code_int(struct Parse *parse, struct Expr *expr, bool is_neg,
 			i = -i;
 		sqlVdbeAddOp2(v, OP_Integer, i, mem);
 		return;
+	} else if (expr->flags & EP_LIntValue) {
+		int64_t i = expr->u.liValue;
+		sqlVdbeAddOp4Dup8(v, OP_Int64, 0, mem, 0, (u8 *) &i,
+			  is_neg ? P4_INT64 : P4_UINT64);
+		return;
 	}
 	int64_t value;
 	const char *z = expr->u.zToken;
@@ -3755,12 +3764,12 @@ sqlExprCodeTarget(Parse * pParse, Expr * pExpr, int target)
 			return target;
 		}
 	case TK_FLOAT:{
-			assert(!ExprHasProperty(pExpr, EP_IntValue));
+			assert(!ExprHasProperty(pExpr, EP_IntValue | EP_LIntValue));
 			codeReal(v, pExpr->u.zToken, 0, target);
 			return target;
 		}
 	case TK_STRING:{
-			assert(!ExprHasProperty(pExpr, EP_IntValue));
+			assert(!ExprHasProperty(pExpr, EP_IntValue | EP_LIntValue));
 			sqlVdbeLoadString(v, target, pExpr->u.zToken);
 			return target;
 		}
@@ -3773,7 +3782,7 @@ sqlExprCodeTarget(Parse * pParse, Expr * pExpr, int target)
 			int n;
 			const char *z;
 			char *zBlob;
-			assert(!ExprHasProperty(pExpr, EP_IntValue));
+			assert(!ExprHasProperty(pExpr, EP_IntValue | EP_LIntValue));
 			assert(pExpr->u.zToken[0] == 'x'
 			       || pExpr->u.zToken[0] == 'X');
 			assert(pExpr->u.zToken[1] == '\'');
@@ -3787,7 +3796,7 @@ sqlExprCodeTarget(Parse * pParse, Expr * pExpr, int target)
 		}
 #endif
 	case TK_VARIABLE:{
-			assert(!ExprHasProperty(pExpr, EP_IntValue));
+			assert(!ExprHasProperty(pExpr, EP_IntValue | EP_LIntValue));
 			assert(pExpr->u.zToken != 0);
 			assert(pExpr->u.zToken[0] != 0);
 			sqlVdbeAddOp2(v, OP_Variable, pExpr->iColumn,
@@ -3910,12 +3919,12 @@ sqlExprCodeTarget(Parse * pParse, Expr * pExpr, int target)
 				expr_code_int(pParse, pLeft, true, target);
 				return target;
 			} else if (pLeft->op == TK_FLOAT) {
-				assert(!ExprHasProperty(pExpr, EP_IntValue));
+				assert(!ExprHasProperty(pExpr, EP_IntValue | EP_LIntValue));
 				codeReal(v, pLeft->u.zToken, 1, target);
 				return target;
 			} else {
 				tempX.op = TK_INTEGER;
-				tempX.flags = EP_IntValue | EP_TokenOnly;
+				tempX.flags = EP_IntValue | EP_LIntValue | EP_TokenOnly;
 				tempX.u.iValue = 0;
 				r1 = sqlExprCodeTemp(pParse, &tempX,
 							 &regFree1);
@@ -3960,7 +3969,7 @@ sqlExprCodeTarget(Parse * pParse, Expr * pExpr, int target)
 	case TK_AGG_FUNCTION:{
 			AggInfo *pInfo = pExpr->pAggInfo;
 			if (pInfo == 0) {
-				assert(!ExprHasProperty(pExpr, EP_IntValue));
+				assert(!ExprHasProperty(pExpr, EP_IntValue | EP_LIntValue));
 				const char *err = "misuse of aggregate: %s()";
 				diag_set(ClientError, ER_SQL_PARSER_GENERIC,
 					 tt_sprintf(err, pExpr->u.zToken));
@@ -3985,7 +3994,7 @@ sqlExprCodeTarget(Parse * pParse, Expr * pExpr, int target)
 				pFarg = pExpr->x.pList;
 			}
 			nFarg = pFarg ? pFarg->nExpr : 0;
-			assert(!ExprHasProperty(pExpr, EP_IntValue));
+			assert(!ExprHasProperty(pExpr, EP_IntValue | EP_LIntValue));
 			zId = pExpr->u.zToken;
 			struct func *func = sql_func_by_signature(zId, nFarg);
 			if (func == NULL) {
@@ -4387,7 +4396,7 @@ sqlExprCodeTarget(Parse * pParse, Expr * pExpr, int target)
 			pParse->is_aborted = true;
 			return 0;
 		}
-		assert(!ExprHasProperty(pExpr, EP_IntValue));
+		assert(!ExprHasProperty(pExpr, EP_IntValue | EP_LIntValue));
 		if (pExpr->on_conflict_action == ON_CONFLICT_ACTION_IGNORE) {
 			sqlVdbeAddOp4(v, OP_Halt, 0,
 					  ON_CONFLICT_ACTION_IGNORE, 0,
@@ -5074,9 +5083,12 @@ sqlExprCompare(Expr * pA, Expr * pB, int iTab)
 		return pB == pA ? 0 : 2;
 	}
 	combinedFlags = pA->flags | pB->flags;
-	if (combinedFlags & EP_IntValue) {
+	if (combinedFlags & (EP_IntValue | EP_LIntValue)) {
 		if ((pA->flags & pB->flags & EP_IntValue) != 0
 		    && pA->u.iValue == pB->u.iValue) {
+			return 0;
+		} else if ((pA->flags & pB->flags & EP_LIntValue) != 0
+		    && pA->u.liValue == pB->u.liValue) {
 			return 0;
 		}
 		return 2;
