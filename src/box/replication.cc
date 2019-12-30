@@ -244,6 +244,8 @@ replica_set_id(struct replica *replica, uint32_t replica_id)
 		replica->gc = gc_consumer_register(&replicaset.vclock,
 						   "replica %s",
 						   tt_uuid_str(&replica->uuid));
+		if (replica->gc == NULL)
+			diag_raise();
 	}
 	replicaset.replica_by_id[replica_id] = replica;
 
