@@ -976,9 +976,10 @@ wal_assign_lsn(struct vclock *vclock_diff, struct vclock *base,
 			(*row)->tsn = tsn;
 			(*row)->is_commit = row == end - 1;
 		} else {
-			vclock_follow(vclock_diff, (*row)->replica_id,
-				      (*row)->lsn - vclock_get(base,
-							       (*row)->replica_id));
+			int64_t delta = (*row)->lsn - vclock_get(base,
+								 (*row)->replica_id);
+			if (delta >= 0)
+				vclock_follow(vclock_diff, (*row)->replica_id, delta);
 		}
 	}
 }
