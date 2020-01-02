@@ -292,6 +292,67 @@ box.execute('CREATE UNIQUE INDEX d ON t2(i);')
  | ...
 
 --
+-- gh-4120: Ensure that <ALTER TABLE DROP CONSTRAINT> works
+-- correctly for each type of constraint.
+--
+-- Drop UNIQUE constraint.
+box.space.T2.index.E ~= nil
+ | ---
+ | - true
+ | ...
+box.execute('ALTER TABLE t2 DROP CONSTRAINT e;')
+ | ---
+ | - row_count: 1
+ | ...
+box.space.T2.index.E == nil
+ | ---
+ | - true
+ | ...
+-- Drop PRIMARY KEY constraint named "C".
+box.execute('DROP INDEX d ON t2;')
+ | ---
+ | - row_count: 1
+ | ...
+box.space.T2.index.C ~= nil
+ | ---
+ | - true
+ | ...
+box.execute('ALTER TABLE t2 DROP CONSTRAINT c;')
+ | ---
+ | - row_count: 1
+ | ...
+box.space.T2.index.C == nil
+ | ---
+ | - true
+ | ...
+-- Drop CHECK constraint.
+box.execute('ALTER TABLE t2 ADD CONSTRAINT e CHECK(i > 0);')
+ | ---
+ | - row_count: 1
+ | ...
+box.space.T2.ck_constraint.E ~= nil
+ | ---
+ | - true
+ | ...
+box.execute('ALTER TABLE t2 DROP CONSTRAINT e;')
+ | ---
+ | - row_count: 1
+ | ...
+box.space.T2.ck_constraint.E == nil
+ | ---
+ | - true
+ | ...
+-- Drop FOREIGN KEY constraint.
+box.execute('ALTER TABLE t2 ADD CONSTRAINT e FOREIGN KEY(i) REFERENCES t1(i);')
+ | ---
+ | - row_count: 1
+ | ...
+box.execute('ALTER TABLE t2 DROP CONSTRAINT e;')
+ | ---
+ | - row_count: 1
+ | ...
+
+--
 -- Cleanup.
 --
 box.execute('DROP TABLE t2;')

@@ -2052,35 +2052,74 @@ fk_constraint_change_defer_mode(struct Parse *parse_context, bool is_deferred)
 		is_deferred;
 }
 
+/**
+ * Emit code to drop the entry from _index or _ck_contstraint or
+ * _fk_constraint space corresponding with the constraint type.
+ */
 void
-sql_drop_foreign_key(struct Parse *parse_context)
+sql_drop_constraint(struct Parse *parse_context)
 {
-	struct drop_entity_def *drop_def = &parse_context->drop_fk_def.base;
-	assert(drop_def->base.entity_type == ENTITY_TYPE_FK);
+	struct drop_entity_def *drop_def =
+		&parse_context->drop_constraint_def.base;
+	assert(drop_def->base.entity_type == ENTITY_TYPE_CONSTRAINT);
 	assert(drop_def->base.alter_action == ALTER_ACTION_DROP);
 	const char *table_name = drop_def->base.entity_name->a[0].zName;
 	assert(table_name != NULL);
-	struct space *child = space_by_name(table_name);
-	if (child == NULL) {
+	struct space *space = space_by_name(table_name);
+	if (space == NULL) {
 		diag_set(ClientError, ER_NO_SUCH_SPACE, table_name);
 		parse_context->is_aborted = true;
 		return;
 	}
-	char *constraint_name =
-		sql_name_from_token(parse_context->db, &drop_def->name);
-	if (constraint_name == NULL) {
+	char *name = sql_name_from_token(parse_context->db, &drop_def->name);
+	if (name == NULL) {
 		parse_context->is_aborted = true;
 		return;
 	}
-	vdbe_emit_fk_constraint_drop(parse_context, constraint_name,
-				     child->def);
+	struct constraint_id *id = space_find_constraint_id(space, name);
+	if (id == NULL) {
+		diag_set(ClientError, ER_NO_SUCH_CONSTRAINT, name, table_name);
+		parse_context->is_aborted = true;
+		return;
+	}
+	struct Vdbe *v = sqlGetVdbe(parse_context);
+	assert(v != NULL);
+	assert(id->type < constraint_type_MAX);
+	switch (id->type) {
+	case CONSTRAINT_TYPE_PK:
+	case CONSTRAINT_TYPE_UNIQUE: {
+		uint32_t index_id = box_index_id_by_name(space->def->id, name,
+							 strlen(name));
+		/*
+		 * We have already verified, that this index
+		 * exists, so we don't check index_id for
+		 * BOX_ID_NIL.
+		 */
+		assert(index_id != BOX_ID_NIL);
+		int record_reg = ++parse_context->nMem;
+		int space_id_reg = ++parse_context->nMem;
+		int index_id_reg = ++parse_context->nMem;
+		sqlVdbeAddOp2(v, OP_Integer, space->def->id, space_id_reg);
+		sqlVdbeAddOp2(v, OP_Integer, index_id, index_id_reg);
+		sqlVdbeAddOp3(v, OP_MakeRecord, space_id_reg, 2, record_reg);
+		sqlVdbeAddOp2(v, OP_SDelete, BOX_INDEX_ID, record_reg);
+		break;
+	}
+	case CONSTRAINT_TYPE_FK:
+		vdbe_emit_fk_constraint_drop(parse_context, name, space->def);
+		break;
+	case CONSTRAINT_TYPE_CK:
+		vdbe_emit_ck_constraint_drop(parse_context, name, space->def);
+		break;
+	default:
+		unreachable();
+	}
 	/*
 	 * We account changes to row count only if drop of
-	 * foreign keys take place in a separate
-	 * ALTER TABLE DROP CONSTRAINT statement, since whole
-	 * DROP TABLE always returns 1 (one) as a row count.
+	 * constraints take place in a separate ALTER TABLE DROP
+	 * CONSTRAINT statement, since whole DROP TABLE always
+	 * returns 1 (one) as a row count.
 	 */
-	struct Vdbe *v = sqlGetVdbe(parse_context);
 	sqlVdbeCountChanges(v);
 	sqlVdbeChangeP5(v, OPFLAG_NCHANGE);
 }
