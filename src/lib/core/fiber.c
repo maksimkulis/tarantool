@@ -1041,13 +1041,17 @@ fiber_stack_destroy(struct fiber *fiber, struct slab_cache *slabc)
 			 * to setup the original protection back in
 			 * background.
 			 *
+			 * For now lets exit with panic: if mprotect
+			 * failed we must not allow to reuse such slab
+			 * with PROT_NONE'ed page somewhere inside.
+			 *
 			 * Note that in case if we're called from
 			 * fiber_stack_create() the @mprotect_flags is
 			 * the same as the slab been created with, so
 			 * calling mprotect for VMA with same flags
 			 * won't fail.
 			 */
-			diag_log();
+			panic_syserror("fiber: Can't put guard page to slab");
 		}
 		slab_put(slabc, fiber->stack_slab);
 	}
