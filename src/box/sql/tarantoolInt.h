@@ -67,11 +67,13 @@ int tarantoolsqlRenameTrigger(const char *zTriggerName,
  *
  * @param field_count Number of fields in ephemeral space.
  * @param key_info Keys description for new ephemeral space.
+ * @param rowid Rowid column number or 0.
  *
  * @retval Pointer to created space, NULL if error.
  */
 struct space *
-sql_ephemeral_space_create(uint32_t filed_count, struct sql_key_info *key_info);
+sql_ephemeral_space_create(uint32_t filed_count, struct sql_key_info *key_info,
+			   uint32_t rowid);
 
 /**
  * Insert tuple into ephemeral space.

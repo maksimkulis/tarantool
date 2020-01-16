@@ -2704,11 +2704,20 @@ case OP_Column: {
 		 * Ephemeral spaces feature only one index
 		 * covering all fields, but ephemeral spaces
 		 * lack format. So, we can fetch type from
-		 * key parts.
+		 * key parts. In case of erphemeral space was
+		 * used during INSERT the index of ephemeral space
+		 * consist of only one field - rowid. Its ID is
+		 * not 0 since it added at the end of the tuple.
+		 * Also, in this case we are sure that
+		 * field_type is SCALAR.
 		 */
 		if (pC->uc.pCursor->curFlags & BTCF_TEphemCursor) {
-			field_type = pC->uc.pCursor->index->def->
-					key_def->parts[p2].type;
+			struct key_def *key_def =
+				pC->uc.pCursor->index->def->key_def;
+			if (key_def->parts[0].fieldno != 0)
+				field_type = FIELD_TYPE_SCALAR;
+			else
+				field_type = key_def->parts[p2].type;
 		} else if (pC->uc.pCursor->curFlags & BTCF_TaCursor) {
 			field_type = pC->uc.pCursor->space->def->
 					fields[p2].type;
@@ -3148,10 +3157,13 @@ open_cursor_set_hints:
  * Synopsis:
  * @param P1 register, where pointer to new space is stored.
  * @param P2 number of columns in a new table.
+ * @param P3 rowid column number or 0.
  * @param P4 key def for new table, NULL is allowed.
  *
  * This opcode creates Tarantool's ephemeral table and stores pointer
- * to it into P1 register.
+ * to it into P1 register. If P3 is not 0, than rowid is used as
+ * primary index of the ephemeral space. In the other case PK of
+ * the ephemeral space consist of all columns.
  */
 case OP_OpenTEphemeral: {
 	assert(pOp->p1 >= 0);
@@ -3159,7 +3171,8 @@ case OP_OpenTEphemeral: {
 	assert(pOp->p4type != P4_KEYINFO || pOp->p4.key_info != NULL);
 
 	struct space *space = sql_ephemeral_space_create(pOp->p2,
-							 pOp->p4.key_info);
+							 pOp->p4.key_info,
+							 pOp->p3);
 
 	if (space == NULL)
 		goto abort_due_to_error;

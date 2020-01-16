@@ -455,8 +455,8 @@ sqlInsert(Parse * pParse,	/* Parser context */
 			reg_eph = ++pParse->nMem;
 			regRec = sqlGetTempReg(pParse);
 			regCopy = sqlGetTempRange(pParse, nColumn + 1);
-			sqlVdbeAddOp2(v, OP_OpenTEphemeral, reg_eph,
-					  nColumn + 1);
+			sqlVdbeAddOp3(v, OP_OpenTEphemeral, reg_eph,
+				      nColumn + 1, nColumn);
 			addrL = sqlVdbeAddOp1(v, OP_Yield, dest.iSDParm);
 			VdbeCoverage(v);
 			sqlVdbeAddOp2(v, OP_NextIdEphemeral, reg_eph,

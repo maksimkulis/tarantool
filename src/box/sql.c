@@ -321,8 +321,10 @@ tarantoolsqlCount(struct BtCursor *pCur)
 }
 
 struct space *
-sql_ephemeral_space_create(uint32_t field_count, struct sql_key_info *key_info)
+sql_ephemeral_space_create(uint32_t field_count, struct sql_key_info *key_info,
+			   uint32_t rowid)
 {
+	assert(rowid == 0 || key_info == NULL);
 	struct key_def *def = NULL;
 	if (key_info != NULL) {
 		def = sql_key_info_to_key_def(key_info);
@@ -330,31 +332,47 @@ sql_ephemeral_space_create(uint32_t field_count, struct sql_key_info *key_info)
 			return NULL;
 	}
 
+	uint32_t index_size;
+	if (rowid == 0)
+		index_size = field_count;
+	else
+		index_size = 1;
+
 	struct key_part_def *ephemer_key_parts = region_alloc(&fiber()->gc,
-				sizeof(*ephemer_key_parts) * field_count);
+				sizeof(*ephemer_key_parts) * index_size);
 	if (ephemer_key_parts == NULL) {
-		diag_set(OutOfMemory, sizeof(*ephemer_key_parts) * field_count,
+		diag_set(OutOfMemory, sizeof(*ephemer_key_parts) * index_size,
 			 "region", "key parts");
 		return NULL;
 	}
-	for (uint32_t i = 0; i < field_count; ++i) {
-		struct key_part_def *part = &ephemer_key_parts[i];
-		part->fieldno = i;
-		part->nullable_action = ON_CONFLICT_ACTION_NONE;
-		part->is_nullable = true;
-		part->sort_order = SORT_ORDER_ASC;
-		part->path = NULL;
-		if (def != NULL && i < def->part_count) {
-			assert(def->parts[i].type < field_type_MAX);
-			part->type = def->parts[i].type;
-			part->coll_id = def->parts[i].coll_id;
-		} else {
-			part->coll_id = COLL_NONE;
-			part->type = FIELD_TYPE_SCALAR;
+	if (rowid == 0) {
+		for (uint32_t i = 0; i < field_count; ++i) {
+			struct key_part_def *part = &ephemer_key_parts[i];
+			part->fieldno = i;
+			part->nullable_action = ON_CONFLICT_ACTION_NONE;
+			part->is_nullable = true;
+			part->sort_order = SORT_ORDER_ASC;
+			part->path = NULL;
+			if (def != NULL && i < def->part_count) {
+				assert(def->parts[i].type < field_type_MAX);
+				part->type = def->parts[i].type;
+				part->coll_id = def->parts[i].coll_id;
+			} else {
+				part->coll_id = COLL_NONE;
+				part->type = FIELD_TYPE_SCALAR;
+			}
 		}
+	} else {
+		ephemer_key_parts->fieldno = rowid;
+		ephemer_key_parts->nullable_action = ON_CONFLICT_ACTION_ABORT;
+		ephemer_key_parts->is_nullable = false;
+		ephemer_key_parts->sort_order = SORT_ORDER_ASC;
+		ephemer_key_parts->path = NULL;
+		ephemer_key_parts->coll_id = COLL_NONE;
+		ephemer_key_parts->type = FIELD_TYPE_UNSIGNED;
 	}
 	struct key_def *ephemer_key_def = key_def_new(ephemer_key_parts,
-						      field_count, false);
+						      index_size, false);
 	if (ephemer_key_def == NULL)
 		return NULL;
 
