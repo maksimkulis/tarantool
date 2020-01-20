@@ -1321,9 +1321,14 @@ space_truncate(struct space *space)
 	ops_buf_end = mp_encode_uint(ops_buf_end, 1);
 	assert(ops_buf_end < buf + buf_size);
 
+	struct space *truncate_space = space_cache_find_xc(BOX_TRUNCATE_ID);
+	memtx_engine_set_quota_strictness(truncate_space->engine, false);
+
 	if (box_upsert(BOX_TRUNCATE_ID, 0, tuple_buf, tuple_buf_end,
 		       ops_buf, ops_buf_end, 0, NULL) != 0)
 		diag_raise();
+
+	memtx_engine_set_quota_strictness(truncate_space->engine, true);
 }
 
 int

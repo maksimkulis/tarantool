@@ -1091,6 +1091,15 @@ memtx_engine_set_memory(struct memtx_engine *memtx, size_t size)
 }
 
 void
+memtx_engine_set_quota_strictness(struct engine *engine, bool strict)
+{
+	if (strncmp(engine->name, "memtx", 5) != 0)
+		return;
+	struct memtx_engine *memtx = (struct memtx_engine *)engine;
+	quota_set_strictness(&memtx->quota, strict);
+}
+
+void
 memtx_engine_set_max_tuple_size(struct memtx_engine *memtx, size_t max_size)
 {
 	memtx->max_tuple_size = max_size;

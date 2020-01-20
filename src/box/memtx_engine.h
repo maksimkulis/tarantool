@@ -214,6 +214,9 @@ int
 memtx_engine_set_memory(struct memtx_engine *memtx, size_t size);
 
 void
+memtx_engine_set_quota_strictness(struct engine *engine, bool strict);
+
+void
 memtx_engine_set_max_tuple_size(struct memtx_engine *memtx, size_t max_size);
 
 /**

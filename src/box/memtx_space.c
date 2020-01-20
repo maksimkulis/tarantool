@@ -354,10 +354,15 @@ memtx_space_execute_delete(struct space *space, struct txn *txn,
 	struct tuple *old_tuple;
 	if (index_get(pk, key, part_count, &old_tuple) != 0)
 		return -1;
-	if (old_tuple != NULL &&
-	    memtx_space->replace(space, old_tuple, NULL,
-				 DUP_REPLACE_OR_INSERT, &stmt->old_tuple) != 0)
-		return -1;
+	if (old_tuple != NULL) {
+		memtx_engine_set_quota_strictness(space->engine, false);
+		int rc = memtx_space->replace(space, old_tuple, NULL,
+					      DUP_REPLACE_OR_INSERT,
+					      &stmt->old_tuple);
+		memtx_engine_set_quota_strictness(space->engine, true);
+		if (rc != 0)
+			return -1;
+	}
 	stmt->engine_savepoint = stmt;
 	*result = stmt->old_tuple;
 	return 0;
