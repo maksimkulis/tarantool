@@ -692,9 +692,31 @@ static int
 applier_txn_rollback_cb(struct trigger *trigger, void *event)
 {
 	(void) trigger;
-	/* Setup shared applier diagnostic area. */
-	diag_set(ClientError, ER_WAL_IO);
-	diag_move(&fiber()->diag, &replicaset.applier.diag);
+
+	/*
+	 * We must not loose the origin error, instead
+	 * lets keep it in replicaset diag instance.
+	 *
+	 * FIXME: We need to revisit this code and
+	 * figure out if we can reconnect and retry
+	 * the prelication process instead of cancelling
+	 * applier with FiberIsCancelled.
+	 */
+	struct error *e = diag_last_error(diag_get());
+	if (!e) {
+		/*
+		 * If information is already lost
+		 * (say xlog cleared diag instance)
+		 * setup general ClientError, seriously
+		 * we need to unweave this mess, if error
+		 * happened it must never been cleared
+		 * until error handling in rollback.
+		 */
+		diag_set(ClientError, ER_WAL_IO);
+		e = diag_last_error(diag_get());
+	}
+	diag_add_error(&replicaset.applier.diag, e);
+
 	/* Broadcast the rollback event across all appliers. */
 	trigger_run(&replicaset.applier.on_rollback, event);
 	/* Rollback applier vclock to the committed one. */
@@ -849,8 +871,20 @@ applier_on_rollback(struct trigger *trigger, void *event)
 		diag_add_error(&applier->diag,
 			       diag_last_error(&replicaset.applier.diag));
 	}
-	/* Stop the applier fiber. */
+
+	/*
+	 * Something really bad happened, we can't proceed
+	 * thus stop the applier and throw FiberIsCancelled
+	 * exception which will be catched by the caller
+	 * and the fiber gracefully finish.
+	 *
+	 * FIXME: Need to make sure that this is a really
+	 * final error where we can't longer proceed and should
+	 * zap the applier, probably we could reconnect and
+	 * retry instead?
+	 */
 	fiber_cancel(applier->reader);
+	diag_set(FiberIsCancelled);
 	return 0;
 }
 
@@ -1098,6 +1132,7 @@ applier_f(va_list ap)
 		} catch (FiberIsCancelled *e) {
 			if (!diag_is_empty(&applier->diag)) {
 				diag_move(&applier->diag, &fiber()->diag);
+				diag_log();
 				applier_disconnect(applier, APPLIER_STOPPED);
 				break;
 			}
