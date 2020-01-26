@@ -69,6 +69,8 @@ struct session_settings_iterator {
 	bool is_eq;
 	/** True if the iterator should include equal keys. */
 	bool is_including;
+	/** True if the iterator is pointing to an existing setting */
+	bool is_set;
 };
 
 static void
@@ -78,6 +80,72 @@ session_settings_iterator_free(struct iterator *ptr)
 		(struct session_settings_iterator *)ptr;
 	free(it->key);
 	free(it);
+}
+
+static int
+session_settings_set_forward(int *sid, const char *key, bool is_eq,
+			     bool is_including)
+{
+	int low = 0, high = session_setting_count - 1;
+	if (key == NULL)
+		return 0;
+	while (low <= high) {
+		int index = (high + low) / 2;
+		const char *name = session_settings[index].name;
+		int cmp = strcmp(name, key);
+		if (cmp == 0) {
+			if (is_including) {
+				*sid = index;
+				return 0;
+			}
+			*sid = ++index;
+			return index < session_setting_count ? 0 : -1;
+		}
+		if (cmp < 0)
+			low = index + 1;
+		else
+			high = index - 1;
+	}
+	if (is_eq) {
+		*sid = session_setting_count;
+		return -1;
+	}
+	assert(low > high);
+	*sid = low;
+	return low < session_setting_count ? 0 : -1;
+}
+
+static int
+session_settings_set_reverse(int *sid, const char *key, bool is_eq,
+			     bool is_including)
+{
+	int low = 0, high = session_setting_count - 1;
+	if (key == NULL)
+		return 0;
+	while (low <= high) {
+		int index = (high + low) / 2;
+		const char *name = session_settings[index].name;
+		int cmp = strcmp(name, key);
+		if (cmp == 0) {
+			if (is_including) {
+				*sid = index;
+				return 0;
+			}
+			*sid = --index;
+			return index >= 0 ? 0 : -1;
+		}
+		if (cmp < 0)
+			low = index + 1;
+		else
+			high = index - 1;
+	}
+	if (is_eq) {
+		*sid = session_setting_count;
+		return -1;
+	}
+	assert(low > high);
+	*sid = high;
+	return high >= 0 ? 0 : -1;
 }
 
 static int
@@ -130,12 +198,18 @@ session_settings_iterator_next(struct iterator *iterator, struct tuple **result)
 {
 	struct session_settings_iterator *it =
 		(struct session_settings_iterator *)iterator;
-	int sid = it->setting_id;
+	int rc, sid = it->setting_id;
 	const char *key = it->key;
 	bool is_including = it->is_including, is_eq = it->is_eq;
 	bool is_found = false;
-	if (session_settings_next(&sid, key, is_eq, is_including) == 0)
-		is_found = true;
+	if (!it->is_set) {
+		it->is_set = true;
+		rc = session_settings_set_forward(&sid, key, is_eq,
+						  is_including);
+	} else {
+		rc = session_settings_next(&sid, key, is_eq, is_including);
+	}
+	is_found = rc == 0;
 	it->setting_id = sid + 1;
 	if (!is_found) {
 		*result = NULL;
@@ -152,12 +226,18 @@ session_settings_iterator_prev(struct iterator *iterator, struct tuple **result)
 {
 	struct session_settings_iterator *it =
 		(struct session_settings_iterator *)iterator;
-	int sid = it->setting_id;
+	int rc, sid = it->setting_id;
 	const char *key = it->key;
 	bool is_including = it->is_including, is_eq = it->is_eq;
 	bool is_found = false;
-	if (session_settings_prev(&sid, key, is_eq, is_including) == 0)
-		is_found = true;
+	if (!it->is_set) {
+		it->is_set = true;
+		rc = session_settings_set_reverse(&sid, key, is_eq,
+						  is_including);
+	} else {
+		rc = session_settings_prev(&sid, key, is_eq, is_including);
+	}
+	is_found = rc == 0;
 	it->setting_id = sid - 1;
 	if (!is_found) {
 		*result = NULL;
@@ -209,6 +289,7 @@ session_settings_index_create_iterator(struct index *base,
 	it->is_eq = type == ITER_EQ || type == ITER_REQ;
 	it->is_including = it->is_eq || type == ITER_GE || type == ITER_ALL ||
 			   type == ITER_LE;
+	it->is_set = false;
 	it->format = index->format;
 	if (!iterator_type_is_reverse(type)) {
 		it->base.next = session_settings_iterator_next;
@@ -232,7 +313,7 @@ session_settings_index_get(struct index *base, const char *key,
 	key = mp_decode_str(&key, &len);
 	key = tt_cstr(key, len);
 	int sid = 0;
-	if (session_settings_next(&sid, key, true, true) == 0)
+	if (session_settings_set_forward(&sid, key, true, true) == 0)
 		goto found;
 	*result = NULL;
 	return 0;
@@ -334,7 +415,7 @@ session_settings_space_execute_update(struct space *space, struct txn *txn,
 	}
 	key = mp_decode_str(&key, &key_len);
 	key = tt_cstr(key, key_len);
-	if (session_settings_next(&sid, key, true, true) == 0)
+	if (session_settings_set_forward(&sid, key, true, true) == 0)
 		goto found;
 	*result = NULL;
 	return 0;
