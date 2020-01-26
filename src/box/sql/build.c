@@ -3310,29 +3310,7 @@ sql_fieldno_by_name(struct Parse *parse_context, struct Expr *field_name,
 	return 0;
 }
 
-/**
- * Identifiers of all SQL session setings. The identifier of the
- * option is equal to its place in the sorted list of session
- * options of current module.
- *
- * It is IMPORTANT that these options are sorted by name. If this
- * is not the case, the result returned by the _session_settings
- * space iterator will not be sorted properly.
- */
-enum {
-	SQL_SESSION_SETTING_DEFAULT_ENGINE = 0,
-	SQL_SESSION_SETTING_DEFER_FOREIGN_KEYS,
-	SQL_SESSION_SETTING_FULL_COLUMN_NAMES,
-	SQL_SESSION_SETTING_FULL_METADATA,
-	SQL_SESSION_SETTING_PARSER_DEBUG,
-	SQL_SESSION_SETTING_RECURSIVE_TRIGGERS,
-	SQL_SESSION_SETTING_REVERSE_UNORDERED_SELECTS,
-	SQL_SESSION_SETTING_SELECT_DEBUG,
-	SQL_SESSION_SETTING_VDBE_DEBUG,
-	sql_session_setting_MAX,
-};
-
-static const char *sql_session_setting_strs[sql_session_setting_MAX] = {
+static const char *sql_session_setting_strs[] = {
 	"sql_default_engine",
 	"sql_defer_foreign_keys",
 	"sql_full_column_names",
@@ -3345,22 +3323,12 @@ static const char *sql_session_setting_strs[sql_session_setting_MAX] = {
 };
 
 /**
- * A local structure that allows to establish a connection between
- * parameter and its field type and mask, if it has one.
- */
-struct sql_option_metadata
-{
-	uint32_t field_type;
-	uint32_t mask;
-};
-
-/**
  * Variable that contains SQL session option field types and masks
  * if they have one or 0 if don't have.
  *
  * It is IMPORTANT that these options sorted by name.
  */
-static struct sql_option_metadata sql_session_opts[] = {
+static struct session_setting_metadata sql_session_opts[] = {
 	/** SQL_SESSION_SETTING_DEFAULT_ENGINE */
 	{FIELD_TYPE_STRING, 0},
 	/** SQL_SESSION_SETTING_DEFER_FOREIGN_KEYS */
@@ -3386,10 +3354,11 @@ static struct sql_option_metadata sql_session_opts[] = {
 static void
 sql_session_setting_get(int id, const char **mp_pair, const char **mp_pair_end)
 {
-	assert(id >= 0 && id < sql_session_setting_MAX);
+	assert(id >= sql_session_setting_BEGIN &&
+	       id <= sql_session_setting_END);
 	struct session *session = current_session();
 	uint32_t flags = session->sql_flags;
-	struct sql_option_metadata *opt = &sql_session_opts[id];
+	struct session_setting_metadata *opt = &sql_session_opts[id];
 	uint32_t mask = opt->mask;
 	const char *name = sql_session_setting_strs[id];
 	size_t name_len = strlen(name);
@@ -3426,7 +3395,7 @@ static int
 sql_set_boolean_option(int id, bool value)
 {
 	struct session *session = current_session();
-	struct sql_option_metadata *option = &sql_session_opts[id];
+	struct session_setting_metadata *option = &sql_session_opts[id];
 	assert(option->field_type == FIELD_TYPE_BOOLEAN);
 #ifdef NDEBUG
 	if ((session->sql_flags & SQL_SqlTrace) == 0) {
@@ -3468,7 +3437,8 @@ sql_set_string_option(int id, const char *value)
 static int
 sql_session_setting_set(int id, const char *mp_value)
 {
-	assert(id >= 0 && id < sql_session_setting_MAX);
+	assert(id >= sql_session_setting_BEGIN &&
+	       id <= sql_session_setting_END);
 	enum mp_type mtype = mp_typeof(*mp_value);
 	enum field_type stype = sql_session_opts[id].field_type;
 	uint32_t len;
@@ -3495,10 +3465,12 @@ sql_session_setting_set(int id, const char *mp_value)
 void
 sql_session_settings_init()
 {
-	struct session_setting_module *module =
-		&session_setting_modules[SESSION_SETTING_SQL];
-	module->settings = sql_session_setting_strs;
-	module->setting_count = sql_session_setting_MAX;
-	module->get = sql_session_setting_get;
-	module->set = sql_session_setting_set;
+	int id = sql_session_setting_BEGIN;
+	for (; id <= sql_session_setting_END; ++id) {
+		struct session_setting *setting = &session_settings[id];
+		setting->name = sql_session_setting_strs[id];
+		setting->metadata = sql_session_opts[id];
+		setting->get = sql_session_setting_get;
+		setting->set = sql_session_setting_set;
+	}
 }

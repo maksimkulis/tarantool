@@ -31,28 +31,37 @@
  */
 
 /**
- * Session has settings. Settings belong to different subsystems,
- * such as SQL. Each subsystem registers here its session setting
- * type and a set of settings with getter and setter functions.
- * The self-registration of modules allows session setting code
- * not to depend on all the subsystems.
+ * Identifiers of all session setings. The identifier of the
+ * option is equal to its place in the sorted list of session
+ * options.
  *
- * The types should be ordered in alphabetical order, because the
- * type list is used by setting iterators.
+ * It is IMPORTANT that these options are sorted by name. If this
+ * is not the case, the result returned by the _session_settings
+ * space iterator will not be sorted properly.
  */
-enum session_setting_type {
-	SESSION_SETTING_SQL,
-	session_setting_type_MAX,
+enum {
+	sql_session_setting_BEGIN = 0,
+	SQL_SESSION_SETTING_DEFAULT_ENGINE = sql_session_setting_BEGIN,
+	SQL_SESSION_SETTING_DEFER_FOREIGN_KEYS,
+	SQL_SESSION_SETTING_FULL_COLUMN_NAMES,
+	SQL_SESSION_SETTING_FULL_METADATA,
+	SQL_SESSION_SETTING_PARSER_DEBUG,
+	SQL_SESSION_SETTING_RECURSIVE_TRIGGERS,
+	SQL_SESSION_SETTING_REVERSE_UNORDERED_SELECTS,
+	SQL_SESSION_SETTING_SELECT_DEBUG,
+	SQL_SESSION_SETTING_VDBE_DEBUG,
+	sql_session_setting_END = SQL_SESSION_SETTING_VDBE_DEBUG,
+	session_setting_MAX,
 };
 
-struct session_setting_module {
-	/**
-	 * An array of setting names. All of them should have the
-	 * same prefix.
-	 */
-	const char **settings;
-	/** Count of settings. */
-	int setting_count;
+struct session_setting_metadata {
+	unsigned field_type;
+	unsigned mask;
+};
+
+struct session_setting {
+	const char *name;
+	struct session_setting_metadata metadata;
 	/**
 	 * Get a MessagePack encoded pair [name, value] for a
 	 * setting having index @a id. Index is from the settings
@@ -67,4 +76,4 @@ struct session_setting_module {
 	int (*set)(int id, const char *mp_value);
 };
 
-extern struct session_setting_module session_setting_modules[];
+extern struct session_setting session_settings[];
