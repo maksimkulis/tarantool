@@ -51,6 +51,7 @@
 #include "txn.h"
 #include "box.h"
 #include "scoped_guard.h"
+#include "errinj.h"
 
 STRS(applier_state, applier_STATE);
 
@@ -829,6 +830,11 @@ applier_apply_tx(struct stailq *rows)
 
 	trigger_create(on_commit, applier_txn_commit_cb, NULL, NULL);
 	txn_on_commit(txn, on_commit);
+
+	ERROR_INJECT(ERRINJ_REPLICA_TXN_WRITE, {
+		diag_set(ClientError, ER_INJECTION, "replica txn write injection");
+		goto rollback;
+	});
 
 	if (txn_write(txn) < 0)
 		goto fail;
