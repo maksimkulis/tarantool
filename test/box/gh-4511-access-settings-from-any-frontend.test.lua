@@ -118,3 +118,20 @@ s:update('sql_defer_foreign_keys', {{'=', 'some text', true}})
 s:update('sql_defer_foreign_keys', {{'=', 'value', 1}})
 s:update('sql_defer_foreign_keys', {{'=', 'value', {1}}})
 s:update('sql_defer_foreign_keys', {{'=', 'value', '1'}})
+
+-- gh-4711: Provide a user-friendly frontend for accessing session settings.
+settings = box.session.settings
+assert(settings ~= nil)
+
+s:update('sql_default_engine', {{'=', 2, 'vinyl'}})
+settings.sql_default_engine
+settings.sql_default_engine:set('memtx')
+assert(s:get('sql_default_engine').value == 'memtx')
+settings.sql_defer_foreign_keys:set(true)
+assert(s:get('sql_defer_foreign_keys').value == true)
+s:update('sql_defer_foreign_keys', {{'=', 2, false}})
+settings.sql_defer_foreign_keys
+
+settings.sql_default_engine:set(true)
+settings.sql_defer_foreign_keys:set(false, 1, 2, 3)
+settings.sql_parser_debug:set('string')

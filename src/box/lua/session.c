@@ -42,6 +42,9 @@
 #include "box/user.h"
 #include "box/schema.h"
 #include "box/port.h"
+#include "box/session_settings.h"
+
+extern void sql_session_settings_init();
 
 static const char *sessionlib_name = "box.session";
 
@@ -411,6 +414,108 @@ lbox_session_on_access_denied(struct lua_State *L)
 				  lbox_push_on_access_denied_event, NULL);
 }
 
+static int
+session_setting_serialize(lua_State *L)
+{
+	lua_getfield(L, -1, "_id");
+	int sid = lua_tointeger(L, -1);
+	const char *mp_pair, *mp_pair_end;
+	session_settings[sid].get(sid, &mp_pair, &mp_pair_end);
+	uint32_t len;
+	mp_decode_array(&mp_pair); /* [setting_name : value] */
+	mp_decode_str(&mp_pair, &len);
+	uint32_t field_type = session_settings[sid].metadata.field_type;
+	if (field_type == FIELD_TYPE_BOOLEAN) {
+		bool value = mp_decode_bool(&mp_pair);
+		lua_pushboolean(L, value);
+	} else {
+		const char *str = mp_decode_str(&mp_pair, &len);
+		lua_pushlstring(L, str, len);
+	}
+	return 1;
+}
+
+static int
+session_setting_set(lua_State *L)
+{
+	if (lua_gettop(L) != 2)
+		goto error;
+	int arg_type = lua_type(L, -1);
+	lua_getfield(L, -2, "_id");
+	int sid = lua_tointeger(L, -1);
+	struct session_setting *setting = &session_settings[sid];
+	lua_pop(L, 1);
+	switch (arg_type) {
+		case LUA_TBOOLEAN: {
+			bool value = lua_toboolean(L, -1);
+			size_t size = mp_sizeof_bool(value);
+			char *mp_value = (char *)region_alloc(&fiber()->gc,
+							      size);
+			mp_encode_bool(mp_value, value);
+			if (setting->set(sid, mp_value) != 0)
+				luaT_error(L);
+			lua_pushstring(L, setting->name);
+			lua_pushboolean(L, value);
+			break;
+		}
+		case LUA_TSTRING: {
+			const char *str = lua_tostring(L, -1);
+			size_t len = strlen(str);
+			uint32_t size = mp_sizeof_str(len);
+			char *mp_value = (char *)region_alloc(&fiber()->gc,
+							      size);
+			mp_encode_str(mp_value, str, len);
+			if (setting->set(sid, mp_value) != 0)
+				luaT_error(L);
+			lua_pushstring(L, setting->name);
+			lua_pushstring(L, str);
+			break;
+		}
+		default:
+			goto error;
+	}
+	return 2;
+error:
+	luaL_error(L, "box.session.settings.set(): bad arguments");
+	return -1;
+}
+
+static void
+session_setting_create(struct lua_State *L, int id)
+{
+	lua_newtable(L);
+	lua_pushstring(L, "_id");
+	lua_pushinteger(L, id);
+	lua_settable(L, -3);
+	lua_newtable(L); /* setting metatable */
+	lua_pushstring(L, "__serialize");
+	lua_pushcfunction(L, session_setting_serialize);
+	lua_settable(L, -3);
+	lua_setmetatable(L, -2);
+	lua_pushcfunction(L, session_setting_set);
+	lua_setfield(L, -2, "set");
+}
+
+void
+session_settings_init(struct lua_State *L)
+{
+	/* Init settings that are avaliable right after session creation. */
+	sql_session_settings_init();
+	static const struct luaL_Reg settingslib[] = {
+		{NULL, NULL}
+	};
+	luaL_register_module(L, "box.session.settings", settingslib);
+	int id = sql_session_setting_BEGIN;
+	for (; id <= sql_session_setting_END; ++id) {
+		/* Store settings as name : id */
+		struct session_setting *setting = &session_settings[id];
+		lua_pushstring(L, setting->name);
+		session_setting_create(L, id);
+		lua_settable(L, -3);
+	}
+	lua_pop(L, 1);
+}
+
 void
 session_storage_cleanup(int sid)
 {
@@ -448,6 +553,7 @@ exit:
 void
 box_lua_session_init(struct lua_State *L)
 {
+	session_settings_init(L);
 	static const struct luaL_Reg session_internal_lib[] = {
 		{"create", lbox_session_create},
 		{"run_on_connect",    lbox_session_run_on_connect},
