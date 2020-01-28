@@ -163,7 +163,7 @@ perf_sysbench:
   image: ${IMAGE_PERF_BUILT}
   stage: test
   tags:
-    - docker_perf
+    - docker_sh1_perf
   script:
     - ${GITLAB_MAKE} perf_sysbench
 
@@ -175,7 +175,7 @@ perf_tpcc:
   image: ${IMAGE_PERF_BUILT}
   stage: test
   tags:
-    - docker_perf
+    - docker_sh2_perf
   script:
     - ${GITLAB_MAKE} perf_tpcc
 
@@ -187,7 +187,7 @@ perf_ycsb_hash:
   image: ${IMAGE_PERF_BUILT}
   stage: test
   tags:
-    - docker_perf
+    - docker_sh7_perf
   variables:
     TYPE: 'hash'
   script:
@@ -201,7 +201,7 @@ perf_ycsb_tree:
   image: ${IMAGE_PERF_BUILT}
   stage: test
   tags:
-    - docker_perf
+    - docker_dev2_perf
   variables:
     TYPE: 'tree'
   script:
@@ -215,7 +215,7 @@ perf_nosqlbench_hash:
   image: ${IMAGE_PERF_BUILT}
   stage: test
   tags:
-    - docker_perf
+    - docker_dev3_perf
   variables:
     TYPE: 'hash'
   script:
@@ -229,7 +229,7 @@ perf_nosqlbench_tree:
   image: ${IMAGE_PERF_BUILT}
   stage: test
   tags:
-    - docker_perf
+    - docker_dev4_perf
   variables:
     TYPE: 'tree'
   script:
@@ -243,7 +243,7 @@ perf_cbench:
   image: ${IMAGE_PERF_BUILT}
   stage: test
   tags:
-    - docker_perf
+    - docker_dev5_perf
   script:
     - ${GITLAB_MAKE} perf_cbench
 
@@ -255,7 +255,7 @@ perf_linkbench:
   image: ${IMAGE_PERF_BUILT}
   stage: test
   tags:
-    - docker_perf_hdd
+    - docker_sh3_perf_mem3g
   script:
     - ${GITLAB_MAKE} perf_linkbench
 
@@ -267,7 +267,7 @@ perf_linkbench_ssd:
   image: ${IMAGE_PERF_BUILT}
   stage: test
   tags:
-    - docker_perf_ssd
+    - docker_sh9_perf_mem3g_ssd
   script:
     - ${GITLAB_MAKE} perf_linkbench
 
