@@ -55,6 +55,7 @@
 #include "box/schema.h"
 #include "box/space.h"
 #include "box/sequence.h"
+#include "box/session_settings.h"
 
 /*
  * Invoke this macro on memory cells just prior to changing the
@@ -5258,6 +5259,50 @@ case OP_IncMaxid: {
 	if (tarantoolsqlIncrementMaxid(&pOut->u.u) != 0)
 		goto abort_due_to_error;
 	pOut->flags = MEM_UInt;
+	break;
+}
+
+/* Opcode: Set P1 * * P4 *
+ *
+ * Set new value to session setting. P1 is ID of the setting.
+ * P4 is actually of type "struct Expr *" and contains value
+ * of the setting.
+ */
+case OP_Set: {
+	assert(pOp->p4type == P4_PTR);
+	struct Expr *expr = (struct Expr *)pOp->p4.p;
+	int sid = pOp->p1;
+	assert(sid >= 0 && sid < session_setting_MAX);
+	struct session_setting *setting = &session_settings[sid];
+	switch (expr->type) {
+		case FIELD_TYPE_BOOLEAN: {
+			bool value = expr->op == TK_TRUE;
+			size_t size = mp_sizeof_bool(value);
+			char *mp_value = (char *)region_alloc(&fiber()->gc,
+							      size);
+			mp_encode_bool(mp_value, value);
+			if (setting->set(sid, mp_value) != 0)
+				goto abort_due_to_error;
+			break;
+		}
+		case FIELD_TYPE_STRING: {
+			const char *str = expr->u.zToken;
+			size_t len = strlen(str);
+			uint32_t size = mp_sizeof_str(len);
+			char *mp_value = (char *)region_alloc(&fiber()->gc,
+							      size);
+			mp_encode_str(mp_value, str, len);
+			if (setting->set(sid, mp_value) != 0)
+				goto abort_due_to_error;
+			break;
+		}
+		default:
+			diag_set(ClientError, ER_SESSION_SETTING_INVALID_VALUE,
+				 setting->name,
+				 field_type_strs[setting->metadata.field_type]);
+			goto abort_due_to_error;
+	}
+	p->nChange++;
 	break;
 }
 

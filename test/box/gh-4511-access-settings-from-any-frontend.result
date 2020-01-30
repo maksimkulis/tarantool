@@ -343,6 +343,39 @@ settings.sql_defer_foreign_keys
  | - false
  | ...
 
+box.execute([[set sql_default_engine = 'vinyl']])
+ | ---
+ | - row_count: 1
+ | ...
+assert(s:get('sql_default_engine').value == 'vinyl')
+ | ---
+ | - true
+ | ...
+box.execute([[set sql_default_engine = 'memtx']])
+ | ---
+ | - row_count: 1
+ | ...
+assert(s:get('sql_default_engine').value == 'memtx')
+ | ---
+ | - true
+ | ...
+box.execute([[set sql_defer_foreign_keys = true]])
+ | ---
+ | - row_count: 1
+ | ...
+assert(s:get('sql_defer_foreign_keys').value == true)
+ | ---
+ | - true
+ | ...
+box.execute([[set sql_defer_foreign_keys = false]])
+ | ---
+ | - row_count: 1
+ | ...
+assert(s:get('sql_defer_foreign_keys').value == false)
+ | ---
+ | - true
+ | ...
+
 settings.sql_default_engine:set(true)
  | ---
  | - error: Session setting sql_default_engine expected a value of type string
@@ -354,4 +387,20 @@ settings.sql_defer_foreign_keys:set(false, 1, 2, 3)
 settings.sql_parser_debug:set('string')
  | ---
  | - error: Session setting sql_parser_debug expected a value of type boolean
+ | ...
+
+box.execute([[set sql_def_engine = true]])
+ | ---
+ | - null
+ | - Session setting SQL_DEF_ENGINE doesn't exist
+ | ...
+box.execute([[set sql_default_engine = true]])
+ | ---
+ | - null
+ | - Session setting sql_default_engine expected a value of type string
+ | ...
+box.execute([[set sql_defer_foreign_keys = 'true']])
+ | ---
+ | - null
+ | - Session setting sql_defer_foreign_keys expected a value of type boolean
  | ...

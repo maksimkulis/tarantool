@@ -3474,3 +3474,34 @@ sql_session_settings_init()
 		setting->set = sql_session_setting_set;
 	}
 }
+
+void
+sql_set_setting(struct Parse *parse_context, struct Token *name,
+		struct Expr *value)
+{
+	struct Vdbe *vdbe = sqlGetVdbe(parse_context);
+	assert(vdbe != NULL);
+	sqlVdbeCountChanges(vdbe);
+	char *key = sql_name_from_token(sql_get(), name);
+	if (key == NULL)
+		goto abort;
+	int low = 0, high = session_setting_MAX - 1;
+	while (low <= high) {
+		int index = (high + low) / 2;
+		int cmp = strcasecmp(session_settings[index].name, key);
+		if (cmp == 0) {
+			sqlVdbeAddOp4(vdbe, OP_Set, index, 0, 0,
+				      (const char *)value, P4_PTR);
+			return;
+		}
+		if (cmp < 0)
+			low = index + 1;
+		else
+			high = index - 1;
+	}
+	diag_set(ClientError, ER_SQL_PARSER_GENERIC,
+		 tt_sprintf("Session setting %s doesn't exist", key));
+abort:
+	parse_context->is_aborted = true;
+	return;
+}
