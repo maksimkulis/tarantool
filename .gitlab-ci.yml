@@ -1,0 +1,298 @@
+stages:
+  - bootstrap
+  - test
+  - cleanup
+
+variables:
+  GITLAB_MAKE: "make -f .gitlab.mk"
+  IMAGE_PERF: "${CI_REGISTRY}/${CI_PROJECT_PATH}/perf/ubuntu-bionic:perf_master"
+  IMAGE_PERF_BUILT: "${CI_REGISTRY}/${CI_PROJECT_PATH}/perf_tmp/ubuntu-bionic:perf_${CI_COMMIT_SHORT_SHA}"
+
+# Jobs templates
+
+.release_only_template: &release_only_definition
+  only:
+    refs:
+      - master
+      - /^.*-full-ci$/
+
+.docker_test_template: &docker_test_definition
+  image: "${CI_REGISTRY}/${CI_PROJECT_PATH}/testing/debian-stretch:latest"
+  stage: test
+  tags:
+    - docker_test
+
+.docker_test_clang8_template: &docker_test_clang8_definition
+  image: "${CI_REGISTRY}/${CI_PROJECT_PATH}/testing/debian-buster:latest"
+  stage: test
+  tags:
+    - docker_test
+
+.deploy_template: &deploy_definition
+  <<: *release_only_definition
+  stage: test
+  tags:
+    - deploy
+  script:
+    - ${GITLAB_MAKE} package
+
+.deploy_test_template: &deploy_test_definition
+  <<: *release_only_definition
+  stage: test
+  tags:
+    - deploy_test
+  script:
+    - ${GITLAB_MAKE} package
+
+.vbox_template: &vbox_definition
+  stage: test
+  before_script:
+    - ${GITLAB_MAKE} vms_start
+  after_script:
+    - ${GITLAB_MAKE} vms_shutdown
+
+# Perf
+
+perf_bootstrap:
+  only:
+    refs:
+      - master
+      - /^.*-perf$/
+  stage: bootstrap
+  tags:
+    - perf
+  script:
+    - ${GITLAB_MAKE} docker_perf_bootstrap
+
+perf_sysbench:
+  only:
+    refs:
+      - master
+      - /^.*-perf$/
+  image: ${IMAGE_PERF_BUILT}
+  stage: test
+  tags:
+    - docker_perf
+  script:
+    - ${GITLAB_MAKE} perf_sysbench
+
+perf_tpcc:
+  only:
+    refs:
+      - master
+      - /^.*-perf$/
+  image: ${IMAGE_PERF_BUILT}
+  stage: test
+  tags:
+    - docker_perf
+  script:
+    - ${GITLAB_MAKE} perf_tpcc
+
+perf_ycsb_hash:
+  only:
+    refs:
+      - master
+      - /^.*-perf$/
+  image: ${IMAGE_PERF_BUILT}
+  stage: test
+  tags:
+    - docker_perf
+  variables:
+    TYPE: 'hash'
+  script:
+    - ${GITLAB_MAKE} perf_ycsb
+
+perf_ycsb_tree:
+  only:
+    refs:
+      - master
+      - /^.*-perf$/
+  image: ${IMAGE_PERF_BUILT}
+  stage: test
+  tags:
+    - docker_perf
+  variables:
+    TYPE: 'tree'
+  script:
+    - ${GITLAB_MAKE} perf_ycsb
+
+perf_nosqlbench_hash:
+  only:
+    refs:
+      - master
+      - /^.*-perf$/
+  image: ${IMAGE_PERF_BUILT}
+  stage: test
+  tags:
+    - docker_perf
+  variables:
+    TYPE: 'hash'
+  script:
+    - ${GITLAB_MAKE} perf_nosqlbench
+
+perf_nosqlbench_tree:
+  only:
+    refs:
+      - master
+      - /^.*-perf$/
+  image: ${IMAGE_PERF_BUILT}
+  stage: test
+  tags:
+    - docker_perf
+  variables:
+    TYPE: 'tree'
+  script:
+    - ${GITLAB_MAKE} perf_nosqlbench
+
+perf_cbench:
+  only:
+    refs:
+      - master
+      - /^.*-perf$/
+  image: ${IMAGE_PERF_BUILT}
+  stage: test
+  tags:
+    - docker_perf
+  script:
+    - ${GITLAB_MAKE} perf_cbench
+
+perf_linkbench:
+  only:
+    refs:
+      - master
+      - /^.*-perf$/
+  image: ${IMAGE_PERF_BUILT}
+  stage: test
+  tags:
+    - docker_perf_hdd
+  script:
+    - ${GITLAB_MAKE} perf_linkbench
+
+perf_linkbench_ssd:
+  only:
+    refs:
+      - master
+      - /^.*-perf$/
+  image: ${IMAGE_PERF_BUILT}
+  stage: test
+  tags:
+    - docker_perf_ssd
+  script:
+    - ${GITLAB_MAKE} perf_linkbench
+
+remove_images:
+  only:
+    refs:
+      - master
+      - /^.*-perf$/
+  stage: cleanup
+  when: always
+  tags:
+    - perf
+  script:
+    - ${GITLAB_MAKE} docker_perf_tmp_image_remove
+
+# Packs
+
+centos_6:
+  <<: *deploy_definition
+  variables:
+    OS: 'el'
+    DIST: '6'
+
+centos_7:
+  <<: *deploy_test_definition
+  variables:
+    OS: 'el'
+    DIST: '7'
+
+centos_8:
+  <<: *deploy_test_definition
+  variables:
+    OS: 'el'
+    DIST: '8'
+
+fedora_28:
+  <<: *deploy_test_definition
+  variables:
+    OS: 'fedora'
+    DIST: '28'
+
+fedora_29:
+  <<: *deploy_test_definition
+  variables:
+    OS: 'fedora'
+    DIST: '29'
+
+fedora_30:
+  <<: *deploy_test_definition
+  variables:
+    OS: 'fedora'
+    DIST: '30'
+
+fedora_31:
+  <<: *deploy_test_definition
+  variables:
+    OS: 'fedora'
+    DIST: '31'
+
+ubuntu_14_04:
+  <<: *deploy_definition
+  variables:
+    OS: 'ubuntu'
+    DIST: 'trusty'
+
+ubuntu_16_04:
+  <<: *deploy_definition
+  variables:
+    OS: 'ubuntu'
+    DIST: 'xenial'
+
+ubuntu_18_04:
+  <<: *deploy_definition
+  variables:
+    OS: 'ubuntu'
+    DIST: 'bionic'
+
+ubuntu_18_10:
+  <<: *deploy_definition
+  variables:
+    OS: 'ubuntu'
+    DIST: 'cosmic'
+
+ubuntu_19_04:
+  <<: *deploy_definition
+  variables:
+    OS: 'ubuntu'
+    DIST: 'disco'
+
+ubuntu_19_10:
+  <<: *deploy_definition
+  variables:
+    OS: 'ubuntu'
+    DIST: 'eoan'
+
+debian_8:
+  <<: *deploy_definition
+  variables:
+    OS: 'debian'
+    DIST: 'jessie'
+
+debian_9:
+  <<: *deploy_definition
+  variables:
+    OS: 'debian'
+    DIST: 'stretch'
+
+debian_10:
+  <<: *deploy_definition
+  variables:
+    OS: 'debian'
+    DIST: 'buster'
+
+static_build:
+  <<: *deploy_test_definition
+  variables:
+    RUN_TESTS: 'ON'
+  script:
+    - ${GITLAB_MAKE} static_build
