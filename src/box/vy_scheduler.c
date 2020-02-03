@@ -778,36 +778,6 @@ vy_run_prepare(struct vy_run_env *run_env, struct vy_lsm *lsm)
 }
 
 /**
- * Free an incomplete run and write a record to the metadata
- * log indicating that the run is not needed any more.
- * This function is called on dump/compaction task abort.
- */
-static void
-vy_run_discard(struct vy_run *run)
-{
-	int64_t run_id = run->id;
-
-	vy_run_unref(run);
-
-	ERROR_INJECT(ERRINJ_VY_RUN_DISCARD,
-		     {say_error("error injection: run %lld not discarded",
-				(long long)run_id); return;});
-
-	vy_log_tx_begin();
-	/*
-	 * The run hasn't been used and can be deleted right away
-	 * so set gc_lsn to minimal possible (0).
-	 */
-	vy_log_drop_run(run_id, 0);
-	/*
-	 * Leave the record in the vylog buffer on disk error.
-	 * If we fail to flush it before restart, we will delete
-	 * the run file upon recovery completion.
-	 */
-	vy_log_tx_try_commit();
-}
-
-/**
  * Encode and write a single deferred DELETE statement to
  * _vinyl_deferred_delete system space. The rest will be
  * done by the space trigger.

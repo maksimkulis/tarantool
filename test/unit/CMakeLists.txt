@@ -193,6 +193,7 @@ target_link_libraries(column_mask.test tuple unit)
 
 add_executable(vy_write_iterator.test
     vy_write_iterator.c
+    vy_log_stub.c
     ${PROJECT_SOURCE_DIR}/src/box/vy_run.c
     ${PROJECT_SOURCE_DIR}/src/box/vy_upsert.c
     ${PROJECT_SOURCE_DIR}/src/box/vy_write_iterator.c

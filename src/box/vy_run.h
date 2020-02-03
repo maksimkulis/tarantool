@@ -355,6 +355,9 @@ vy_run_new(struct vy_run_env *env, int64_t id);
 void
 vy_run_delete(struct vy_run *run);
 
+void
+vy_run_discard(struct vy_run *run);
+
 static inline void
 vy_run_ref(struct vy_run *run)
 {

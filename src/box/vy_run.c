@@ -44,6 +44,7 @@
 #include "xlog.h"
 #include "xrow.h"
 #include "vy_history.h"
+#include "vy_log.h"
 
 static const uint64_t vy_page_info_key_map = (1 << VY_PAGE_INFO_OFFSET) |
 					     (1 << VY_PAGE_INFO_SIZE) |
@@ -320,6 +321,36 @@ vy_run_delete(struct vy_run *run)
 	vy_run_clear(run);
 	TRASH(run);
 	free(run);
+}
+
+/**
+ * Free an incomplete run and write a record to the metadata
+ * log indicating that the run is not needed any more.
+ * This function is called on dump/compaction task abort.
+ */
+void
+vy_run_discard(struct vy_run *run)
+{
+	int64_t run_id = run->id;
+
+	vy_run_unref(run);
+
+	ERROR_INJECT(ERRINJ_VY_RUN_DISCARD,
+		     {say_error("error injection: run %lld not discarded",
+				(long long)run_id); return;});
+
+	vy_log_tx_begin();
+	/*
+	 * The run hasn't been used and can be deleted right away
+	 * so set gc_lsn to minimal possible (0).
+	 */
+	vy_log_drop_run(run_id, 0);
+	/*
+	 * Leave the record in the vylog buffer on disk error.
+	 * If we fail to flush it before restart, we will delete
+	 * the run file upon recovery completion.
+	 */
+	vy_log_tx_try_commit();
 }
 
 size_t
