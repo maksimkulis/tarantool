@@ -621,9 +621,9 @@ box_check_vinyl_options(void)
 		tnt_raise(ClientError, ER_CFG, "vinyl_run_count_per_level",
 			  "must be greater than 0");
 	}
-	if (run_size_ratio <= 1) {
+	if (run_size_ratio < 2) {
 		tnt_raise(ClientError, ER_CFG, "vinyl_run_size_ratio",
-			  "must be greater than 1");
+			  "must be greater than or uqual to 2");
 	}
 	if (bloom_fpr <= 0 || bloom_fpr > 1) {
 		tnt_raise(ClientError, ER_CFG, "vinyl_bloom_fpr",

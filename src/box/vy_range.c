@@ -289,7 +289,7 @@ vy_range_update_compaction_priority(struct vy_range *range,
 				    const struct index_opts *opts)
 {
 	assert(opts->run_count_per_level > 0);
-	assert(opts->run_size_ratio > 1);
+	assert(opts->run_size_ratio >= 2);
 
 	range->compaction_priority = 0;
 	vy_disk_stmt_counter_reset(&range->compaction_queue);

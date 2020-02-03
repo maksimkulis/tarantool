@@ -228,10 +228,10 @@ index_opts_decode(struct index_opts *opts, const char *map,
 			 "run_count_per_level must be greater than 0");
 		return -1;
 	}
-	if (opts->run_size_ratio <= 1) {
+	if (opts->run_size_ratio < 2) {
 		diag_set(ClientError, ER_WRONG_INDEX_OPTIONS,
 			 BOX_INDEX_FIELD_OPTS,
-			 "run_size_ratio must be greater than 1");
+			 "run_size_ratio must be greater than or uqual to 2");
 		return -1;
 	}
 	if (opts->bloom_fpr <= 0 || opts->bloom_fpr > 1) {

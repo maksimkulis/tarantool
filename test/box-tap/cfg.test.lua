@@ -46,7 +46,7 @@ invalid('vinyl_read_threads', 0)
 invalid('vinyl_write_threads', 1)
 invalid('vinyl_page_size', 0)
 invalid('vinyl_run_count_per_level', 0)
-invalid('vinyl_run_size_ratio', 1)
+invalid('vinyl_run_size_ratio', 1.9)
 invalid('vinyl_bloom_fpr', 0)
 invalid('vinyl_bloom_fpr', 1.1)
 

@@ -23,9 +23,10 @@ space:create_index('pk', {run_count_per_level = 0})
 - error: 'Wrong index options (field 4): run_count_per_level must be greater than
     0'
 ...
-space:create_index('pk', {run_size_ratio = 1})
+space:create_index('pk', {run_size_ratio = 1.9})
 ---
-- error: 'Wrong index options (field 4): run_size_ratio must be greater than 1'
+- error: 'Wrong index options (field 4): run_size_ratio must be greater than or uqual
+    to 2'
 ...
 space:create_index('pk', {bloom_fpr = 0})
 ---
