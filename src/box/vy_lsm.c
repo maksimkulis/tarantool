@@ -374,6 +374,7 @@ vy_lsm_recover_run(struct vy_lsm *lsm, struct vy_run_recovery_info *run_info,
 				  lsm->space_id, lsm->index_id,
 				  lsm->cmp_def, lsm->key_def,
 				  lsm->disk_format, &lsm->opts) != 0)) {
+		vy_run_discard(run);
 		vy_run_unref(run);
 		return NULL;
 	}
@@ -426,8 +427,14 @@ vy_lsm_recover_slice(struct vy_lsm *lsm, struct vy_range *range,
 
 	run = vy_lsm_recover_run(lsm, slice_info->run,
 				 run_env, force_recovery);
-	if (run == NULL)
+	if (run == NULL) {
+		if (force_recovery) {
+			vy_log_tx_begin();
+			vy_log_delete_slice(slice_info->id);
+			vy_log_tx_try_commit();
+		}
 		goto out;
+	}
 
 	slice = vy_slice_new(slice_info->id, run, begin, end, lsm->cmp_def);
 	if (slice == NULL)
@@ -486,9 +493,11 @@ vy_lsm_recover_range(struct vy_lsm *lsm,
 	rlist_foreach_entry_reverse(slice_info, &range_info->slices, in_range) {
 		if (vy_lsm_recover_slice(lsm, range, slice_info,
 					 run_env, force_recovery) == NULL) {
-			vy_range_delete(range);
-			range = NULL;
-			goto out;
+			if (!force_recovery) {
+				vy_range_delete(range);
+				range = NULL;
+				goto out;
+			}
 		}
 	}
 	vy_lsm_add_range(lsm, range);

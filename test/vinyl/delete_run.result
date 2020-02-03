@@ -1,0 +1,302 @@
+-- test-run result file version 2
+test_run = require('test_run').new()
+ | ---
+ | ...
+fiber = require('fiber')
+ | ---
+ | ...
+
+-- Test 1
+test_run:cmd("create server test with script='vinyl/force_recovery_true.lua'")
+ | ---
+ | - true
+ | ...
+test_run:cmd("start server test with args='1'")
+ | ---
+ | - true
+ | ...
+test_run:cmd("switch test")
+ | ---
+ | - true
+ | ...
+
+test = box.schema.space.create('test', {engine='vinyl'})
+ | ---
+ | ...
+_ = test:create_index('pk')
+ | ---
+ | ...
+for i = 1, 10 do test:insert{i, i + 100} box.snapshot() end
+ | ---
+ | ...
+test:select()
+ | ---
+ | - - [1, 101]
+ |   - [2, 102]
+ |   - [3, 103]
+ |   - [4, 104]
+ |   - [5, 105]
+ |   - [6, 106]
+ |   - [7, 107]
+ |   - [8, 108]
+ |   - [9, 109]
+ |   - [10, 110]
+ | ...
+
+fio = require ('fio')
+ | ---
+ | ...
+for _, f in pairs(fio.glob(box.cfg.vinyl_dir .. '/' .. test.id .. '/0/*26*')) do fio.unlink(f) end
+ | ---
+ | ...
+
+test_run:cmd('switch default')
+ | ---
+ | - true
+ | ...
+test_run:cmd('restart server test with args="1"')
+ | ---
+ | - true
+ | ...
+test_run:cmd('switch test')
+ | ---
+ | - true
+ | ...
+box.cfg.force_recovery
+ | ---
+ | - true
+ | ...
+box.space.test:select()
+ | ---
+ | - - [9, 109]
+ |   - [10, 110]
+ | ...
+
+test_run:cmd('switch default')
+ | ---
+ | - true
+ | ...
+test_run:cmd('restart server test with args="0"')
+ | ---
+ | - true
+ | ...
+test_run:cmd('switch test')
+ | ---
+ | - true
+ | ...
+box.cfg.force_recovery
+ | ---
+ | - false
+ | ...
+box.space.test:select()
+ | ---
+ | - - [9, 109]
+ |   - [10, 110]
+ | ...
+
+test_run:cmd('switch default')
+ | ---
+ | - true
+ | ...
+test_run:cmd('stop server test')
+ | ---
+ | - true
+ | ...
+test_run:cmd('cleanup server test')
+ | ---
+ | - true
+ | ...
+test_run:cmd('delete server test')
+ | ---
+ | - true
+ | ...
+
+-- Test 2
+test_run = require('test_run').new()
+ | ---
+ | ...
+test_run:cmd("create server test with script='vinyl/force_recovery_true.lua'")
+ | ---
+ | - true
+ | ...
+test_run:cmd("start server test with args='1'")
+ | ---
+ | - true
+ | ...
+test_run:cmd("switch test")
+ | ---
+ | - true
+ | ...
+
+test = box.schema.space.create('test', {engine='vinyl'})
+ | ---
+ | ...
+_ = test:create_index('pk')
+ | ---
+ | ...
+_ = test:insert{1, "123"}
+ | ---
+ | ...
+test:select()
+ | ---
+ | - - [1, '123']
+ | ...
+box.snapshot()
+ | ---
+ | - ok
+ | ...
+
+fio = require ('fio')
+ | ---
+ | ...
+for _, f in pairs(fio.glob(box.cfg.vinyl_dir .. '/' .. test.id .. '/0/*.index')) do fio.unlink(f) end
+ | ---
+ | ...
+
+test_run:cmd('switch default')
+ | ---
+ | - true
+ | ...
+test_run:cmd('restart server test with args="1"')
+ | ---
+ | - true
+ | ...
+test_run:cmd('switch test')
+ | ---
+ | - true
+ | ...
+box.space.test:select()
+ | ---
+ | - - [1, '123']
+ | ...
+
+test_run:cmd('switch default')
+ | ---
+ | - true
+ | ...
+test_run:cmd('restart server test with args="0"')
+ | ---
+ | - true
+ | ...
+test_run:cmd('switch test')
+ | ---
+ | - true
+ | ...
+box.space.test:select()
+ | ---
+ | - - [1, '123']
+ | ...
+
+test_run:cmd('switch default')
+ | ---
+ | - true
+ | ...
+test_run:cmd('stop server test')
+ | ---
+ | - true
+ | ...
+test_run:cmd('cleanup server test')
+ | ---
+ | - true
+ | ...
+test_run:cmd('delete server test')
+ | ---
+ | - true
+ | ...
+
+-- Test3
+
+test_run = require('test_run').new()
+ | ---
+ | ...
+test_run:cmd("create server test with script='vinyl/force_recovery_true.lua'")
+ | ---
+ | - true
+ | ...
+test_run:cmd("start server test")
+ | ---
+ | - true
+ | ...
+test_run:cmd("switch test")
+ | ---
+ | - true
+ | ...
+
+test = box.schema.space.create('test', {engine='vinyl'})
+ | ---
+ | ...
+_ = test:create_index('pk')
+ | ---
+ | ...
+_ = test:insert{1, "123"}
+ | ---
+ | ...
+test:select(1)
+ | ---
+ | - - [1, '123']
+ | ...
+box.snapshot()
+ | ---
+ | - ok
+ | ...
+
+fio = require ('fio')
+ | ---
+ | ...
+for _, f in pairs(fio.glob(box.cfg.vinyl_dir .. '/' .. test.id .. '/0/*.run')) do fio.unlink(f) end
+ | ---
+ | ...
+
+test_run:cmd('switch default')
+ | ---
+ | - true
+ | ...
+test_run:cmd('restart server test with args="1"')
+ | ---
+ | - true
+ | ...
+test_run:cmd('switch test')
+ | ---
+ | - true
+ | ...
+box.space.test:select()
+ | ---
+ | - []
+ | ...
+
+test_run:cmd('switch default')
+ | ---
+ | - true
+ | ...
+test_run:cmd('restart server test with args="0"')
+ | ---
+ | - true
+ | ...
+test_run:cmd('switch test')
+ | ---
+ | - true
+ | ...
+box.cfg.force_recovery
+ | ---
+ | - false
+ | ...
+box.space.test:select()
+ | ---
+ | - []
+ | ...
+test_run:cmd('switch default')
+ | ---
+ | - true
+ | ...
+test_run:cmd('stop server test')
+ | ---
+ | - true
+ | ...
+test_run:cmd('cleanup server test')
+ | ---
+ | - true
+ | ...
+test_run:cmd('delete server test')
+ | ---
+ | - true
+ | ...
